@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "projectKind": "flutter-app",
+  "versionSource": "pubspec.yaml version",
+  "dirtyWorktreePolicy": "block-store-release",
+  "secretRedaction": {
+    "environmentPrefixes": [
+      "APP_STORE_",
+      "GOOGLE_PLAY_",
+      "KEYSTORE_",
+      "MATCH_"
+    ],
+    "keyNames": [
+      "apiKey",
+      "apiIssuer",
+      "token",
+      "password",
+      "privateKeyPath",
+      "keystorePassword"
+    ]
+  },
+  "status": {
+    "commands": [
+      [
+        "git",
+        "status",
+        "--short"
+      ]
+    ]
+  },
+  "targets": [
+    {
+      "id": "android-release-aab",
+      "label": "Android release AAB",
+      "platform": "android",
+      "artifactType": "AAB",
+      "audience": "Google Play release",
+      "storeLike": true,
+      "command": [
+        "./tool/build_android_release_aab.sh"
+      ],
+      "requiredFiles": [
+        "android/key.properties",
+        "android/app/upload-keystore.jks",
+        "assets/env/release.env",
+        "android/app/google-services.json"
+      ],
+      "requiredEnvFiles": [
+        "assets/env/release.env"
+      ],
+      "allowedOptions": [
+        "analyticsEnabled",
+        "crashlyticsEnabled"
+      ],
+      "forbiddenOptions": [
+        "buildName",
+        "buildNumber"
+      ],
+      "upload": {
+        "supported": false,
+        "requiresSeparateConfirmation": true
+      },
+      "evidence": {
+        "artifactLabels": [
+          "AAB"
+        ],
+        "manifestLabels": [
+          "Manifest"
+        ],
+        "symbolLabels": [
+          "Symbols"
+        ]
+      }
+    },
+    {
+      "id": "ios-app-store-ipa",
+      "label": "iOS App Store IPA",
+      "platform": "ios",
+      "artifactType": "IPA",
+      "audience": "App Store Connect",
+      "storeLike": true,
+      "command": [
+        "./tool/build_ios_app_store_ipa.sh"
+      ],
+      "requiredFiles": [
+        "assets/env/release.env",
+        "ios/Runner/GoogleService-Info.plist"
+      ],
+      "requiredEnvFiles": [
+        "assets/env/release.env"
+      ],
+      "allowedOptions": [
+        "exportParentDir",
+        "uploadAfterBuild",
+        "uploadWait",
+        "analyticsEnabled",
+        "crashlyticsEnabled"
+      ],
+      "forbiddenOptions": [
+        "bundleIdentifier",
+        "buildName",
+        "buildNumber"
+      ],
+      "upload": {
+        "supported": true,
+        "optional": true,
+        "requiresSeparateConfirmation": true
+      },
+      "evidence": {
+        "artifactLabels": [
+          "IPA"
+        ],
+        "manifestLabels": [
+          "Manifest"
+        ],
+        "symbolLabels": [
+          "Symbols",
+          "dSYM"
+        ]
+      }
+    }
+  ]
+}

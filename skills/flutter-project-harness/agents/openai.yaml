@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flutter Project Harness"
+  short_description: "Maintain Flutter project fact-source docs"
+  default_prompt: "Use $flutter-project-harness to add or refresh project fact-source docs for this Flutter app or package."

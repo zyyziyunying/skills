@@ -1,0 +1,4 @@
+interface:
+  display_name: "Flutter Release Packager"
+  short_description: "Guide Flutter release packaging evidence"
+  default_prompt: "Use $flutter-release-packager to prepare and run a Flutter release package with preflight checks and artifact evidence."

@@ -51,6 +51,8 @@ npx skills add zyyziyunying/skills --all
 | `flutter-build-responsive-layout` | Build or fix Flutter UI that adapts across sizes and orientations. |
 | `flutter-fix-layout-issues` | Fix Flutter overflow and unbounded-constraint layout errors. |
 | `flutter-implement-json-serialization` | Implement App API DTO and JSON mapping work in the BesideYou Flutter app. |
+| `flutter-project-harness` | Create or refresh Flutter project fact-source docs and AGENTS reading paths. |
+| `flutter-release-packager` | Guide Flutter release packaging with preflight checks and artifact evidence. |
 | `git-commit-helper` | Plan and create intentional atomic git commits. |
 | `goal-first-development` | Manual-only goal-first workflow driven by `goal.html`. |
 | `independent-review-subagent` | Manual-only independent no-context review subagent workflow. |

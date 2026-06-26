@@ -14,10 +14,14 @@ for skill_md in "$repo_root"/*/SKILL.md; do
   skill_name="$(basename "$skill_dir")"
 
   case "$skill_name" in
-    skills|scripts|besideyou-project-harness|besideyou-release-packager)
+    skills|scripts|.*)
       continue
       ;;
   esac
+
+  if [ -e "$skill_dir/.private-skill" ]; then
+    continue
+  fi
 
   mkdir -p "$tmp_dir/$skill_name"
   rsync -a --exclude ".DS_Store" "$skill_dir/" "$tmp_dir/$skill_name/"

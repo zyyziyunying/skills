@@ -18,7 +18,7 @@ Prefer these root-level files inside each independent Flutter app, package, plug
 - `DESIGN.md`: project-level UI/display/interaction/visual facts.
 - `GENERATION.md`: generated-file ownership, commands, ignored outputs, whether outputs are committed.
 - `LOCAL.md`: local setup, debug entry, secrets, human-run commands, machine-local files.
-- `PACKAGING.md`: package identity, signing, versioning, artifacts, install/update/deployment rules.
+- `PACKAGING.md`: package identity, signing, versioning, artifacts, install/update/deployment rules, release agent contract link.
 - `AGENTS.md`: execution rules and read-before-editing path that points to the files above.
 
 Use only the relevant subset. A pure Dart package may not need `DESIGN.md` or `PACKAGING.md`; a Flutter plugin may need separate app/package/example packaging notes; a docs-only area may only need a short `AGENTS.md` reading path.
@@ -40,7 +40,7 @@ Use only the relevant subset. A pure Dart package may not need `DESIGN.md` or `P
 - `DESIGN.md` owns project-wide design facts. Feature-specific details belong near the feature.
 - `GENERATION.md` owns generated artifacts. Every generator should list source paths, output paths, command, commit/ignore policy, and whether Codex may run it.
 - `LOCAL.md` owns local setup. Keep secrets, ignored files, and machine-local entries explicit.
-- `PACKAGING.md` owns installable or publishable artifacts. Apps need versioning, signing, artifact naming, release channel, and rollback notes; packages need publishing and compatibility rules.
+- `PACKAGING.md` owns installable or publishable artifacts. Apps need versioning, signing, artifact naming, release channel, rollback notes, and any project-owned release agent contract; packages need publishing and compatibility rules.
 - `AGENTS.md` owns agent execution and reading order. It should reference fact sources instead of duplicating their current details.
 
 ## Flutter Defaults

@@ -1,6 +1,6 @@
 # Flutter Release Agent Contract
 
-Use a release agent contract when a Flutter project has repeatable release packaging steps that should be safe for agents to inspect and run. The contract lives in the app repository because package identities, signing files, release scripts, environment names, upload policy, and evidence paths are project facts.
+Use a release agent contract when a Flutter project has repeatable release packaging steps that should be safe for agents to inspect and run. `PACKAGING.md` is the human-readable source of truth; the contract is the machine-readable execution surface linked from that document. The contract lives in the app repository because package identities, signing files, release scripts, environment names, upload policy, and evidence paths are project facts.
 
 ## Recommended Path
 
@@ -17,10 +17,22 @@ Keep the contract explicit and boring. Prefer strings, booleans, arrays, and com
 - `schemaVersion`: integer contract version.
 - `projectKind`: usually `flutter-app`, `flutter-package`, or `flutter-plugin`.
 - `versionSource`: where the package version comes from, such as `pubspec.yaml version`, CI build metadata, or a release file.
-- `status`: non-mutating discovery commands or local release-console status endpoint.
+- `releaseConsole`: local release-console protocol used by the generic helper.
+- `status`: optional extra non-mutating discovery commands.
 - `dirtyWorktreePolicy`: `block-store-release`, `warn`, or `allow`.
+- `stripEnvironmentPrefixes`: environment variable prefixes that must be removed from the parent shell before starting the release console.
 - `secretRedaction`: key names, environment prefixes, path fields, or log patterns that must be redacted.
 - `targets`: supported package targets.
+
+The `releaseConsole` object should describe:
+
+- `startCommand`: exact command array to start the local console.
+- `startupUrlPattern`: regex whose first capture group is the local console URL.
+- `auth`: `tokenQueryParameter` when the startup URL includes a query token.
+- `statusEndpoint`: GET endpoint for non-mutating status.
+- `buildEndpoint`: POST endpoint for starting a build.
+- `jobEndpoint`: GET endpoint template for polling a job, using `{id}`.
+- `cancelEndpoint`: optional POST endpoint template for cancellation.
 
 Each target should describe:
 

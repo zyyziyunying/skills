@@ -33,3 +33,7 @@ This document owns packaging, signing, artifact, publishing, and deployment rule
 ## Validation
 
 [List evidence required before sharing, uploading, publishing, or deploying artifacts.]
+
+## Release Agent Contract
+
+[If AI-assisted packaging is allowed, link the project-owned contract, usually `tool/release_console/agent-contract.json`. State that `PACKAGING.md` is the human-readable source of truth and the contract is the machine-readable execution surface.]

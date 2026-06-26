@@ -3,6 +3,23 @@
   "projectKind": "flutter-app",
   "versionSource": "pubspec.yaml version",
   "dirtyWorktreePolicy": "block-store-release",
+  "stripEnvironmentPrefixes": [],
+  "releaseConsole": {
+    "startCommand": [
+      "dart",
+      "./tool/release_console/server.dart",
+      "--port",
+      "0"
+    ],
+    "startupUrlPattern": "Release console:\\\\s+(\\\\S+)",
+    "auth": {
+      "tokenQueryParameter": "token"
+    },
+    "statusEndpoint": "/api/status",
+    "buildEndpoint": "/api/build",
+    "jobEndpoint": "/api/jobs/{id}",
+    "cancelEndpoint": "/api/jobs/{id}/cancel"
+  },
   "secretRedaction": {
     "environmentPrefixes": [
       "APP_STORE_",

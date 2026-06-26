@@ -11,7 +11,7 @@ Use this skill to package Flutter apps through a documented project release path
 
 ## Required Reads
 
-Before packaging, read the nearest `AGENTS.md` and the project release fact sources that exist, usually `SPEC.md`, `PACKAGING.md`, `TEST.md`, `LOCAL.md`, or a release goal/runbook. If the project provides a release agent contract, read it and `references/release-agent-contract.md` before asking for packaging parameters.
+Before packaging, read the nearest `AGENTS.md`, then `SPEC.md`, `PACKAGING.md`, `TEST.md`, `LOCAL.md`, or a release goal/runbook when they exist. Treat `PACKAGING.md` as the human-readable packaging source of truth. If `PACKAGING.md` links a release agent contract, read it and `references/release-agent-contract.md` before asking for packaging parameters.
 
 ## Hard Rules
 
@@ -20,8 +20,8 @@ Before packaging, read the nearest `AGENTS.md` and the project release fact sour
 - Do not invent signing credentials, profiles, bundle identifiers, package names, or environment values.
 - Do not paste secret values, private key paths, tokens, passwords, or full signing credential paths into the final answer.
 - For external, production, or store-facing releases, block on unexpected dirty worktrees unless the user explicitly accepts the dirty state and the final summary calls it out.
-- Prefer a project-owned release console, release script, or release agent contract over manual UI interaction.
-- If no reliable release path is documented, stop before building and report the missing project contract instead of improvising a store package.
+- Prefer the project-owned `PACKAGING.md` plus release agent contract over manual UI interaction.
+- If `PACKAGING.md` is missing or does not identify a reliable release path, stop before building and report the missing project contract instead of improvising a store package.
 
 ## Workflow
 
@@ -31,9 +31,9 @@ Before packaging, read the nearest `AGENTS.md` and the project release fact sour
    - In monorepos, distinguish the workspace root from the app/package root.
 
 2. Discover status without mutating release state.
-   - Read project release docs and any release agent contract.
+   - Read `PACKAGING.md` and any release agent contract linked from it.
    - Report project root, branch, commit, version source, dirty status, available targets, required input files, and known build/output directories.
-   - If the contract defines a status command or release-console status endpoint, prefer that over hand-written discovery.
+   - If the contract defines a release-console status endpoint, prefer `scripts/release_console_client.py status` over hand-written discovery.
 
 3. Ask for required parameters.
    - Target: Android APK, Android AAB, iOS IPA, internal QA, Play testing, Play production, ad hoc iOS, TestFlight, or App Store.
@@ -49,7 +49,7 @@ Before packaging, read the nearest `AGENTS.md` and the project release fact sour
    Include target, purpose, version source/value, branch/commit, dirty decision plus dirty files, required input files, env posture, signing/export settings, upload setting, artifact destination, and expected evidence. Ask for a clear build confirmation. Ask separately for external upload confirmation when applicable.
 
 5. Launch the build through the documented path.
-   - Use the project release command, CI workflow, or release console client exactly as documented.
+   - Use the project release command, CI workflow, or `scripts/release_console_client.py build` exactly as documented.
    - Pass only confirmed parameters.
    - Preserve the project's versioning policy; do not add ad hoc build-name/build-number overrides unless the docs explicitly require them.
    - Redact secrets from logs and summaries.
@@ -62,7 +62,7 @@ Before packaging, read the nearest `AGENTS.md` and the project release fact sour
 
 ## Release Agent Contract
 
-When a Flutter project needs repeatable AI-assisted release packaging, create a project-owned release agent contract instead of hardcoding project details into this skill. Read `references/release-agent-contract.md` for the field model and copy `assets/templates/release-agent-contract.json` as a starting point.
+When a Flutter project needs repeatable AI-assisted release packaging, create a project-owned release agent contract instead of hardcoding project details into this skill. Read `references/release-agent-contract.md` for the field model and copy `assets/templates/release-agent-contract.json` as a starting point. Link the contract from `PACKAGING.md`.
 
 Recommended project-owned path:
 
@@ -71,3 +71,27 @@ tool/release_console/agent-contract.json
 ```
 
 The contract may describe targets, status commands, required files, allowed options, forbidden options, environment prefixes, secret keys, build commands, upload semantics, and evidence patterns. The contract belongs to the app repository because package identities, signing rules, environment names, and release scripts are project facts.
+
+## Helper Script
+
+Use the generic helper only when `PACKAGING.md` points to a release agent contract with a `releaseConsole` section.
+
+Status-only:
+
+```bash
+python3 ~/.codex/skills/flutter-release-packager/scripts/release_console_client.py status \
+  --project /path/to/flutter-app
+```
+
+Build after confirmation:
+
+```bash
+python3 ~/.codex/skills/flutter-release-packager/scripts/release_console_client.py build \
+  --project /path/to/flutter-app \
+  --target android-release-aab \
+  --option analyticsEnabled=false \
+  --option crashlyticsEnabled=true \
+  --confirm-build
+```
+
+Add `--allow-dirty` only after the user accepts the dirty state. Add `--confirm-upload` only after separate upload confirmation. The helper reads project facts from the contract, starts the project release console, calls the documented endpoints, redacts configured secrets, streams job logs, and prints evidence labels configured by the project.

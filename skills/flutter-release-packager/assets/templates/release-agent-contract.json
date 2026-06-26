@@ -11,7 +11,7 @@
       "--port",
       "0"
     ],
-    "startupUrlPattern": "Release console:\\\\s+(\\\\S+)",
+    "startupUrlPattern": "Release console:\\s+(\\S+)",
     "auth": {
       "tokenQueryParameter": "token"
     },
@@ -69,6 +69,20 @@
         "analyticsEnabled",
         "crashlyticsEnabled"
       ],
+      "options": [
+        {
+          "name": "analyticsEnabled",
+          "type": "boolean",
+          "default": false,
+          "description": "Enable release analytics instrumentation."
+        },
+        {
+          "name": "crashlyticsEnabled",
+          "type": "boolean",
+          "default": true,
+          "description": "Enable release crash reporting."
+        }
+      ],
       "forbiddenOptions": [
         "buildName",
         "buildNumber"
@@ -78,14 +92,21 @@
         "requiresSeparateConfirmation": true
       },
       "evidence": {
+        "requiredForSuccess": true,
         "artifactLabels": [
           "AAB"
+        ],
+        "flutterOutputLabels": [
+          "Flutter AAB output"
         ],
         "manifestLabels": [
           "Manifest"
         ],
         "symbolLabels": [
           "Symbols"
+        ],
+        "artifactsDirLabels": [
+          "Artifacts"
         ]
       }
     },
@@ -113,6 +134,38 @@
         "analyticsEnabled",
         "crashlyticsEnabled"
       ],
+      "options": [
+        {
+          "name": "exportParentDir",
+          "type": "path",
+          "default": "~/Downloads",
+          "description": "Parent directory for exported IPA artifacts."
+        },
+        {
+          "name": "uploadAfterBuild",
+          "type": "boolean",
+          "default": false,
+          "description": "Upload the IPA after a successful app-store export."
+        },
+        {
+          "name": "uploadWait",
+          "type": "boolean",
+          "default": false,
+          "description": "Wait for remote upload processing."
+        },
+        {
+          "name": "analyticsEnabled",
+          "type": "boolean",
+          "default": false,
+          "description": "Enable release analytics instrumentation."
+        },
+        {
+          "name": "crashlyticsEnabled",
+          "type": "boolean",
+          "default": true,
+          "description": "Enable release crash reporting."
+        }
+      ],
       "forbiddenOptions": [
         "bundleIdentifier",
         "buildName",
@@ -121,11 +174,21 @@
       "upload": {
         "supported": true,
         "optional": true,
+        "triggerOptions": [
+          "uploadAfterBuild"
+        ],
+        "waitOptions": [
+          "uploadWait"
+        ],
         "requiresSeparateConfirmation": true
       },
       "evidence": {
+        "requiredForSuccess": true,
         "artifactLabels": [
           "IPA"
+        ],
+        "flutterOutputLabels": [
+          "Flutter IPA output"
         ],
         "manifestLabels": [
           "Manifest"
@@ -133,6 +196,16 @@
         "symbolLabels": [
           "Symbols",
           "dSYM"
+        ],
+        "artifactsDirLabels": [
+          "Artifacts"
+        ],
+        "uploadStatusLabels": [
+          "Upload to App Store Connect"
+        ],
+        "uploadLogLabels": [
+          "App Store Connect upload finished. Log",
+          "App Store Connect upload failed. Log"
         ]
       }
     }

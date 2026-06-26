@@ -20,6 +20,10 @@ from typing import Any
 
 
 DEFAULT_CONTRACT_PATH = "tool/release_console/agent-contract.json"
+REDACTION_MARKER = "<redacted>"
+SUPPORTED_SCHEMA_VERSION = 1
+DIRTY_POLICIES = {"block", "block-store-release", "warn", "allow"}
+UPLOAD_TRIGGER_FALLBACK = ("uploadAfterBuild", "iosUploadAfterBuild", "upload")
 
 
 def parse_bool(value: str) -> bool:
@@ -48,7 +52,55 @@ def load_contract(project: Path, contract_path: str) -> dict[str, Any]:
         contract = json.load(handle)
     if not isinstance(contract, dict):
         raise SystemExit("release agent contract must be a JSON object")
+    validate_contract(contract)
     return contract
+
+
+def require_string_list(
+    value: Any,
+    field_name: str,
+    *,
+    required: bool = False,
+) -> list[str]:
+    if value is None:
+        if required:
+            raise SystemExit(f"{field_name} must be a string array")
+        return []
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise SystemExit(f"{field_name} must be a string array")
+    return [str(item) for item in value]
+
+
+def validate_contract(contract: dict[str, Any]) -> None:
+    if contract.get("schemaVersion") != SUPPORTED_SCHEMA_VERSION:
+        raise SystemExit(
+            f"release agent contract schemaVersion must be {SUPPORTED_SCHEMA_VERSION}"
+        )
+    policy = contract.get("dirtyWorktreePolicy")
+    if policy not in DIRTY_POLICIES:
+        raise SystemExit(
+            "dirtyWorktreePolicy must be one of: "
+            + ", ".join(sorted(DIRTY_POLICIES))
+        )
+    targets = contract.get("targets")
+    if not isinstance(targets, list) or not targets:
+        raise SystemExit("contract targets must be a non-empty list")
+    seen: set[str] = set()
+    for index, target in enumerate(targets):
+        if not isinstance(target, dict):
+            raise SystemExit(f"contract target at index {index} must be an object")
+        target_id = target.get("id")
+        if not isinstance(target_id, str) or not target_id:
+            raise SystemExit(f"contract target at index {index} must define id")
+        if target_id in seen:
+            raise SystemExit(f"duplicate target id in contract: {target_id}")
+        seen.add(target_id)
+        if not isinstance(target.get("storeLike"), bool):
+            raise SystemExit(f"target {target_id} must define boolean storeLike")
+        allowed_option_names(target)
+        require_string_list(target.get("forbiddenOptions"), f"target {target_id}.forbiddenOptions")
+        validate_upload_schema(target)
+        validate_evidence_schema(target)
 
 
 def target_by_id(contract: dict[str, Any], target_id: str) -> dict[str, Any]:
@@ -61,7 +113,7 @@ def target_by_id(contract: dict[str, Any], target_id: str) -> dict[str, Any]:
     raise SystemExit(f"unknown target in contract: {target_id}")
 
 
-def git_status_short(project: Path) -> list[str]:
+def git_status_short(project: Path, *, fail_closed: bool = False) -> list[str]:
     result = subprocess.run(
         ["git", "status", "--short"],
         cwd=project,
@@ -70,20 +122,55 @@ def git_status_short(project: Path) -> list[str]:
         text=True,
     )
     if result.returncode != 0:
+        if fail_closed:
+            detail = result.stderr.strip() or result.stdout.strip() or "unknown error"
+            raise SystemExit(f"unable to inspect git status before build: {detail}")
         return []
     return [line for line in result.stdout.splitlines() if line.strip()]
 
 
+def secret_redaction_config(contract: dict[str, Any]) -> dict[str, Any]:
+    secret_config = contract.get("secretRedaction", {})
+    return secret_config if isinstance(secret_config, dict) else {}
+
+
+def redaction_key_names(contract: dict[str, Any]) -> set[str]:
+    return {
+        str(item).lower()
+        for item in require_string_list(
+            secret_redaction_config(contract).get("keyNames"),
+            "secretRedaction.keyNames",
+        )
+    }
+
+
+def redact_data(value: Any, contract: dict[str, Any], key_name: str | None = None) -> Any:
+    if key_name is not None and key_name.lower() in redaction_key_names(contract):
+        return REDACTION_MARKER
+    if isinstance(value, dict):
+        return {
+            str(key): redact_data(item, contract, str(key))
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [redact_data(item, contract) for item in value]
+    if isinstance(value, str):
+        return redact(value, contract)
+    return value
+
+
 def redact(value: str, contract: dict[str, Any]) -> str:
     redacted = value
-    secret_config = contract.get("secretRedaction", {})
+    secret_config = secret_redaction_config(contract)
     prefixes = []
     key_names = []
     patterns = []
-    if isinstance(secret_config, dict):
-        prefixes = [str(item) for item in secret_config.get("environmentPrefixes", [])]
-        key_names = [str(item) for item in secret_config.get("keyNames", [])]
-        patterns = [str(item) for item in secret_config.get("patterns", [])]
+    prefixes = require_string_list(
+        secret_config.get("environmentPrefixes"),
+        "secretRedaction.environmentPrefixes",
+    )
+    key_names = require_string_list(secret_config.get("keyNames"), "secretRedaction.keyNames")
+    patterns = require_string_list(secret_config.get("patterns"), "secretRedaction.patterns")
 
     for prefix in prefixes:
         redacted = re.sub(
@@ -92,15 +179,26 @@ def redact(value: str, contract: dict[str, Any]) -> str:
             redacted,
         )
     for key in key_names:
+        quoted = re.escape(key)
         redacted = re.sub(
-            rf"({re.escape(key)}[=:]\s*)[^\s,;]+",
-            r"\1<redacted>",
+            rf'("{quoted}"\s*:\s*")[^"]*(")',
+            rf"\1{REDACTION_MARKER}\2",
+            redacted,
+            flags=re.IGNORECASE,
+        )
+        redacted = re.sub(
+            rf"(\b{quoted}\b\s*[=:]\s*)(\"[^\"]*\"|'[^']*'|[^\s,;]+)",
+            rf"\1{REDACTION_MARKER}",
             redacted,
             flags=re.IGNORECASE,
         )
     for pattern in patterns:
-        redacted = re.sub(pattern, "<redacted>", redacted)
-    redacted = re.sub(r"(token=)[^&\s]+", r"\1<redacted>", redacted)
+        try:
+            redacted = re.sub(pattern, REDACTION_MARKER, redacted)
+        except re.error as error:
+            raise SystemExit(f"invalid secret redaction pattern {pattern!r}: {error}") from error
+    redacted = re.sub(r"([?&]token=)[^&\s]+", rf"\1{REDACTION_MARKER}", redacted)
+    redacted = re.sub(r"(token=)[^&\s]+", rf"\1{REDACTION_MARKER}", redacted)
     return redacted
 
 
@@ -139,22 +237,160 @@ def parse_options(items: list[str]) -> dict[str, Any]:
         key, raw_value = item.split("=", 1)
         if not key:
             raise SystemExit(f"--option key is empty: {item}")
+        if key in options:
+            raise SystemExit(f"duplicate --option is not allowed: {key}")
         options[key] = coerce_option_value(raw_value)
     return options
 
 
+def allowed_option_names(target: dict[str, Any]) -> set[str]:
+    target_id = str(target.get("id", "<unknown>"))
+    option_schemas = target.get("options")
+    allowed_options = target.get("allowedOptions")
+    if option_schemas is not None:
+        if not isinstance(option_schemas, list):
+            raise SystemExit(f"target {target_id}.options must be an array")
+        names: set[str] = set()
+        for index, item in enumerate(option_schemas):
+            if not isinstance(item, dict):
+                raise SystemExit(f"target {target_id}.options[{index}] must be an object")
+            name = item.get("name")
+            if not isinstance(name, str) or not name:
+                raise SystemExit(f"target {target_id}.options[{index}].name is required")
+            if name in names:
+                raise SystemExit(f"duplicate option schema for target {target_id}: {name}")
+            option_type = item.get("type", "string")
+            if option_type not in {"boolean", "string", "path"}:
+                raise SystemExit(
+                    f"target {target_id}.options[{index}].type is unsupported: {option_type}"
+                )
+            if "allowedValues" in item:
+                require_string_list(
+                    item.get("allowedValues"),
+                    f"target {target_id}.options[{index}].allowedValues",
+                )
+            names.add(name)
+        if allowed_options is not None:
+            allowed_set = set(
+                require_string_list(allowed_options, f"target {target_id}.allowedOptions")
+            )
+            if allowed_set != names:
+                raise SystemExit(
+                    f"target {target_id}.allowedOptions must match target options schema"
+                )
+        return names
+    return set(require_string_list(allowed_options, f"target {target_id}.allowedOptions"))
+
+
+def option_schema_by_name(target: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    schemas = target.get("options")
+    if not isinstance(schemas, list):
+        return {}
+    return {
+        str(item["name"]): item
+        for item in schemas
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+    }
+
+
 def validate_options(target: dict[str, Any], options: dict[str, Any]) -> None:
-    allowed = target.get("allowedOptions", [])
-    forbidden = target.get("forbiddenOptions", [])
-    allowed_set = {str(item) for item in allowed} if isinstance(allowed, list) else set()
-    forbidden_set = (
-        {str(item) for item in forbidden} if isinstance(forbidden, list) else set()
+    allowed_set = allowed_option_names(target)
+    forbidden_set = set(
+        require_string_list(
+            target.get("forbiddenOptions"),
+            f"target {target.get('id', '<unknown>')}.forbiddenOptions",
+        )
     )
+    schemas = option_schema_by_name(target)
     for key in options:
         if key in forbidden_set:
             raise SystemExit(f"option is forbidden by contract for this target: {key}")
-        if allowed_set and key not in allowed_set:
+        if key not in allowed_set:
             raise SystemExit(f"option is not allowed by contract for this target: {key}")
+        schema = schemas.get(key)
+        if schema is not None:
+            validate_option_value(key, options[key], schema)
+
+
+def validate_option_value(key: str, value: Any, schema: dict[str, Any]) -> None:
+    option_type = schema.get("type", "string")
+    if option_type == "boolean" and not isinstance(value, bool):
+        raise SystemExit(f"option {key} must be true or false")
+    if option_type in {"string", "path"} and not isinstance(value, str):
+        raise SystemExit(f"option {key} must be a string")
+    allowed_values = schema.get("allowedValues")
+    if allowed_values is not None:
+        values = require_string_list(allowed_values, f"option {key}.allowedValues")
+        if str(value) not in values:
+            raise SystemExit(f"option {key} must be one of: {', '.join(values)}")
+    if "forcedValue" in schema and value != schema.get("forcedValue"):
+        raise SystemExit(f"option {key} is fixed by the contract and cannot be overridden")
+
+
+def effective_option_value(target: dict[str, Any], payload: dict[str, Any], key: str) -> Any:
+    if key in payload:
+        return payload[key]
+    schema = option_schema_by_name(target).get(key)
+    if schema is None:
+        return None
+    if "forcedValue" in schema:
+        return schema.get("forcedValue")
+    return schema.get("default")
+
+
+def validate_evidence_schema(target: dict[str, Any]) -> None:
+    evidence = target.get("evidence", {})
+    if evidence is None:
+        return
+    if not isinstance(evidence, dict):
+        raise SystemExit(f"target {target.get('id', '<unknown>')}.evidence must be an object")
+    for key, value in evidence.items():
+        if key.endswith("Labels"):
+            require_string_list(value, f"target {target.get('id', '<unknown>')}.evidence.{key}")
+
+
+def validate_upload_schema(target: dict[str, Any]) -> None:
+    target_id = str(target.get("id", "<unknown>"))
+    upload = target.get("upload", {"supported": False})
+    if not isinstance(upload, dict):
+        raise SystemExit(f"target {target_id}.upload must be an object")
+    supported = upload.get("supported", False)
+    if not isinstance(supported, bool):
+        raise SystemExit(f"target {target_id}.upload.supported must be boolean")
+    if "requiresSeparateConfirmation" in upload and not isinstance(
+        upload.get("requiresSeparateConfirmation"),
+        bool,
+    ):
+        raise SystemExit(
+            f"target {target_id}.upload.requiresSeparateConfirmation must be boolean"
+        )
+    if not supported:
+        return
+    required = upload.get("required", False)
+    default_upload = upload.get("default", False)
+    if not isinstance(required, bool) or not isinstance(default_upload, bool):
+        raise SystemExit(f"target {target_id}.upload required/default must be boolean")
+    trigger_options = require_string_list(
+        upload.get("triggerOptions"),
+        f"target {target_id}.upload.triggerOptions",
+    )
+    wait_options = require_string_list(
+        upload.get("waitOptions"),
+        f"target {target_id}.upload.waitOptions",
+    )
+    if not required and not default_upload and not trigger_options:
+        raise SystemExit(
+            f"target {target_id}.upload.triggerOptions is required for optional uploads"
+        )
+    known_options = allowed_option_names(target)
+    unknown_upload_options = [
+        item for item in trigger_options + wait_options if item not in known_options
+    ]
+    if unknown_upload_options:
+        raise SystemExit(
+            f"target {target_id}.upload references unknown options: "
+            + ", ".join(unknown_upload_options)
+        )
 
 
 class ReleaseConsole:
@@ -274,20 +510,22 @@ class ReleaseConsole:
                 return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as error:
             body = error.read().decode("utf-8", errors="replace")
-            raise SystemExit(f"HTTP {error.code} from release console: {body}")
+            raise SystemExit(
+                f"HTTP {error.code} from release console: {redact(body, self.contract)}"
+            )
 
 
 def print_status(status: dict[str, Any], project: Path, contract: dict[str, Any]) -> None:
-    print("Project:", status.get("projectRoot", project))
-    print("Branch:", status.get("branch", "-"))
-    print("Commit:", status.get("commit", "-"))
-    print("Version:", status.get("pubspecVersion", "-"))
+    print("Project:", redact(str(status.get("projectRoot", project)), contract))
+    print("Branch:", redact(str(status.get("branch", "-")), contract))
+    print("Commit:", redact(str(status.get("commit", "-")), contract))
+    print("Version:", redact(str(status.get("pubspecVersion", "-")), contract))
     dirty_files = git_status_short(project)
     print("Dirty count:", len(dirty_files) if dirty_files else status.get("dirtyCount", 0))
     if dirty_files:
         print("Dirty files:")
         for line in dirty_files:
-            print(f"  {line}")
+            print(f"  {redact(line, contract)}")
     checks = status.get("checks", [])
     if isinstance(checks, list):
         print("Checks:")
@@ -295,13 +533,16 @@ def print_status(status: dict[str, Any], project: Path, contract: dict[str, Any]
             if not isinstance(item, dict):
                 continue
             label = "OK" if item.get("exists") is True else "MISSING"
-            print(f"  {label} {item.get('path', '-')}")
+            print(f"  {label} {redact(str(item.get('path', '-')), contract)}")
     targets = status.get("targets", [])
     if isinstance(targets, list):
         print("Targets:")
         for item in targets:
             if isinstance(item, dict):
-                print(f"  {item.get('id')}: {item.get('label')}")
+                print(
+                    f"  {redact(str(item.get('id')), contract)}: "
+                    f"{redact(str(item.get('label')), contract)}"
+                )
 
 
 def run_status(args: argparse.Namespace) -> int:
@@ -312,7 +553,7 @@ def run_status(args: argparse.Namespace) -> int:
         console.start(quiet=args.json)
         status = console.request_json("GET", console.endpoint("statusEndpoint"))
         if args.json:
-            print(json.dumps(status, indent=2, sort_keys=True))
+            print(json.dumps(redact_data(status, contract), indent=2, sort_keys=True))
         else:
             print_status(status, project, contract)
         return 0
@@ -320,14 +561,123 @@ def run_status(args: argparse.Namespace) -> int:
         console.close()
 
 
+def upload_related_option_names(target: dict[str, Any]) -> set[str]:
+    upload = target.get("upload", {})
+    names = set(UPLOAD_TRIGGER_FALLBACK)
+    names.update(
+        item
+        for item in allowed_option_names(target)
+        if "upload" in item.lower()
+    )
+    if isinstance(upload, dict):
+        names.update(
+            require_string_list(
+                upload.get("triggerOptions"),
+                f"target {target.get('id', '<unknown>')}.upload.triggerOptions",
+            )
+        )
+        names.update(
+            require_string_list(
+                upload.get("waitOptions"),
+                f"target {target.get('id', '<unknown>')}.upload.waitOptions",
+            )
+        )
+    return names
+
+
+def upload_condition_allows(target: dict[str, Any], payload: dict[str, Any]) -> bool:
+    upload = target.get("upload", {})
+    if not isinstance(upload, dict):
+        return False
+    condition = upload.get("condition")
+    if condition is None:
+        return True
+    if not isinstance(condition, dict):
+        raise SystemExit(f"target {target.get('id', '<unknown>')}.upload.condition must be an object")
+    option = condition.get("option")
+    equals = condition.get("equals")
+    if not isinstance(option, str):
+        raise SystemExit(
+            f"target {target.get('id', '<unknown>')}.upload.condition.option is required"
+        )
+    return effective_option_value(target, payload, option) == equals
+
+
 def upload_requested(target: dict[str, Any], payload: dict[str, Any]) -> bool:
     upload = target.get("upload", {})
     if not isinstance(upload, dict) or not upload.get("supported"):
         return False
-    for key in ("uploadAfterBuild", "iosUploadAfterBuild", "upload"):
+    if upload.get("required") is True or upload.get("default") is True:
+        return True
+    trigger_options = require_string_list(
+        upload.get("triggerOptions"),
+        f"target {target.get('id', '<unknown>')}.upload.triggerOptions",
+    )
+    for key in trigger_options:
         if payload.get(key) is True:
             return True
     return False
+
+
+def validate_upload_request(target: dict[str, Any], payload: dict[str, Any]) -> bool:
+    upload = target.get("upload", {})
+    if not isinstance(upload, dict):
+        raise SystemExit(f"target {target.get('id', '<unknown>')}.upload must be an object")
+    related_keys = upload_related_option_names(target)
+    present_upload_keys = [
+        key for key in payload if key in related_keys and payload.get(key) not in (False, None, "")
+    ]
+    if not upload.get("supported", False):
+        if present_upload_keys:
+            raise SystemExit(
+                "upload options are not supported for this target: "
+                + ", ".join(present_upload_keys)
+            )
+        return False
+    requested = upload_requested(target, payload)
+    wait_options = require_string_list(
+        upload.get("waitOptions"),
+        f"target {target.get('id', '<unknown>')}.upload.waitOptions",
+    )
+    wait_without_upload = [
+        key for key in wait_options if payload.get(key) is True and not requested
+    ]
+    if wait_without_upload:
+        raise SystemExit(
+            "upload wait options require upload to be requested: "
+            + ", ".join(wait_without_upload)
+        )
+    if requested and not upload_condition_allows(target, payload):
+        raise SystemExit("upload requested but target upload condition is not satisfied")
+    return requested
+
+
+def enforce_dirty_policy(
+    contract: dict[str, Any],
+    target: dict[str, Any],
+    project: Path,
+    allow_dirty: bool,
+) -> None:
+    policy = str(contract.get("dirtyWorktreePolicy"))
+    dirty_files = git_status_short(project, fail_closed=policy != "allow")
+    if not dirty_files:
+        return
+    joined = "\n  ".join(redact(line, contract) for line in dirty_files)
+    if policy == "allow":
+        print(f"Dirty worktree detected; policy allows continuing:\n  {joined}")
+        return
+    if policy == "warn":
+        print(f"Dirty worktree detected; continuing under warn policy:\n  {joined}")
+        return
+    should_block = policy == "block" or (
+        policy == "block-store-release" and target.get("storeLike") is True
+    )
+    if should_block and not allow_dirty:
+        raise SystemExit(
+            "refusing release with dirty worktree; use --allow-dirty only after "
+            f"explicit confirmation:\n  {joined}"
+        )
+    print(f"Proceeding with explicitly accepted dirty worktree:\n  {joined}")
 
 
 def run_build(args: argparse.Namespace) -> int:
@@ -339,21 +689,15 @@ def run_build(args: argparse.Namespace) -> int:
     options = parse_options(args.option)
     validate_options(target, options)
     validate_required_files(project, target)
-
-    dirty_files = git_status_short(project)
-    if dirty_files and target.get("storeLike") is True and not args.allow_dirty:
-        joined = "\n  ".join(dirty_files)
-        raise SystemExit(
-            "refusing store-like release with dirty worktree; use --allow-dirty "
-            f"only after explicit confirmation:\n  {joined}"
-        )
-
     payload = {"target": args.target, **options}
-    if upload_requested(target, payload) and not args.confirm_upload:
+    enforce_dirty_policy(contract, target, project, args.allow_dirty)
+
+    requested_upload = validate_upload_request(target, payload)
+    if requested_upload and not args.confirm_upload:
         raise SystemExit("refusing upload without --confirm-upload")
 
     print("Build payload:")
-    print(redact(json.dumps(payload, indent=2, sort_keys=True), contract))
+    print(json.dumps(redact_data(payload, contract), indent=2, sort_keys=True))
 
     console = ReleaseConsole(project, contract)
     job_id = ""
@@ -374,7 +718,15 @@ def run_build(args: argparse.Namespace) -> int:
                 previous_logs = current_logs
             if job.get("running") is False:
                 exit_code = int(job.get("exitCode", 1) or 0)
-                print_evidence(previous_logs, target, contract)
+                evidence_found = print_evidence(previous_logs, target, contract)
+                if (
+                    exit_code == 0
+                    and target.get("storeLike") is True
+                    and evidence_required(target)
+                    and not evidence_found
+                ):
+                    print("Release evidence: required labels were not found", file=sys.stderr)
+                    return 1
                 return exit_code
             time.sleep(args.poll_interval)
             job = console.request_json(
@@ -391,9 +743,12 @@ def run_build(args: argparse.Namespace) -> int:
                         console.endpoint("cancelEndpoint", id=job_id),
                     )
                 except SystemExit as error:
-                    print(f"cancel request failed: {error}", file=sys.stderr)
+                    print(
+                        redact(f"cancel request failed: {error}", contract),
+                        file=sys.stderr,
+                    )
         print("interrupted; terminating release console", file=sys.stderr)
-        if upload_requested(target, payload):
+        if requested_upload:
             print("remote upload may already have started", file=sys.stderr)
         return 130
     finally:
@@ -414,16 +769,20 @@ def print_evidence(
     logs: list[str],
     target: dict[str, Any],
     contract: dict[str, Any],
-) -> None:
+) -> bool:
     evidence_config = target.get("evidence", {})
     labels: list[str] = []
     if isinstance(evidence_config, dict):
-        for key in ("artifactLabels", "manifestLabels", "symbolLabels"):
-            value = evidence_config.get(key, [])
-            if isinstance(value, list):
-                labels.extend(str(item) for item in value)
+        for key, value in evidence_config.items():
+            if key.endswith("Labels"):
+                labels.extend(
+                    require_string_list(
+                        value,
+                        f"target {target.get('id', '<unknown>')}.evidence.{key}",
+                    )
+                )
     if not labels:
-        return
+        return False
     found: dict[str, str] = {}
     for line in logs:
         for label in labels:
@@ -432,10 +791,19 @@ def print_evidence(
                 found[label] = line[len(prefix) :].strip()
     if not found:
         print("Release evidence: none found in final logs")
-        return
+        return False
     print("Release evidence:")
     for label, value in found.items():
         print(f"  {label}: {redact(value, contract)}")
+    return True
+
+
+def evidence_required(target: dict[str, Any]) -> bool:
+    evidence_config = target.get("evidence", {})
+    return isinstance(evidence_config, dict) and evidence_config.get(
+        "requiredForSuccess",
+        False,
+    ) is True
 
 
 def make_parser() -> argparse.ArgumentParser:

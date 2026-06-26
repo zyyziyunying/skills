@@ -79,14 +79,14 @@ Use the generic helper only when `PACKAGING.md` points to a release agent contra
 Status-only:
 
 ```bash
-python3 ~/.codex/skills/flutter-release-packager/scripts/release_console_client.py status \
+python3 /path/to/flutter-release-packager/scripts/release_console_client.py status \
   --project /path/to/flutter-app
 ```
 
 Build after confirmation:
 
 ```bash
-python3 ~/.codex/skills/flutter-release-packager/scripts/release_console_client.py build \
+python3 /path/to/flutter-release-packager/scripts/release_console_client.py build \
   --project /path/to/flutter-app \
   --target android-release-aab \
   --option analyticsEnabled=false \

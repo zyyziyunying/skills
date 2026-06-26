@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Bug Value"
+  short_description: "Bug/regression/severity/fix review"
+  default_prompt: "Use $review-bug-value to review whether this bug, regression, severity label, or proposed fix is valid, valuable, and aligned with project facts and workflows."

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Flutter Best Layout"
+  short_description: "Plan, review, and preview Flutter UI"
+  default_prompt: "Use $flutter-best-layout to plan, review, or preview a Flutter UI flow; implement only when requested and allowed by project guidance."
+
+policy:
+  allow_implicit_invocation: false

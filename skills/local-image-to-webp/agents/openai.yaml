@@ -1,0 +1,4 @@
+interface:
+  display_name: "Local Image To WebP"
+  short_description: "Convert local images to WebP"
+  default_prompt: "Use $local-image-to-webp to convert this local image folder to quality 95 WebP."

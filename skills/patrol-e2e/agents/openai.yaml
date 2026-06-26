@@ -1,0 +1,6 @@
+interface:
+  display_name: "Patrol E2E"
+  short_description: "受控运行 Flutter Patrol E2E 工作流"
+  default_prompt: "Use $patrol-e2e to prepare and run a constrained Patrol smoke test for BesideYou Flutter."
+policy:
+  allow_implicit_invocation: false

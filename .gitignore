@@ -1,0 +1,14 @@
+.DS_Store
+**/.DS_Store
+
+# Keep this repository focused on the npx skill install tree.
+/*
+!/.gitignore
+!/README.md
+!/LICENSE
+!/scripts/
+!/scripts/**
+!/skills/
+!/skills/**
+/skills/besideyou-project-harness/
+/skills/besideyou-release-packager/

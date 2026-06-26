@@ -1,0 +1,6 @@
+interface:
+  display_name: "Goal First Development"
+  short_description: "Run work from a goal.html truth source"
+  default_prompt: "Start $goal-first-development for this work: create or select a ./goals/.../goal.html, complete it enough to execute, then implement and validate from it."
+policy:
+  allow_implicit_invocation: false

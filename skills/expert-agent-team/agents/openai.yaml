@@ -1,0 +1,6 @@
+interface:
+  display_name: "Expert Agent Team"
+  short_description: "Manual expert-agent orchestration"
+  default_prompt: "Use $expert-agent-team to 启用专家级AGENT团队，执行 <task>。"
+policy:
+  allow_implicit_invocation: false

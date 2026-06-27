@@ -1,6 +1,6 @@
 ---
 name: flutter-best-layout
-description: Manual-only guide for planning, reviewing, previewing, and implementing high-quality Flutter UI flows and layouts, including LAYOUT-PREVIEW.md, app-style Web preview, and API mock data for UI checks. Use only when the user explicitly invokes $flutter-best-layout.
+description: Plan, review, preview, and implement high-quality Flutter UI flows and layouts. Use when creating, reviewing, fixing, or translating Flutter UI, including responsive/adaptive layouts, overflow and constraint reasoning, screen/window sizing, orientation-sensitive surfaces, fixed Figma/CSS dimensions, first-screen visibility, image/card/dialog sizing, mobile/tablet/desktop form factors, LAYOUT-PREVIEW.md, app-style Web preview, or API mock data for UI checks.
 ---
 
 # Flutter Best Layout
@@ -21,6 +21,24 @@ Before implementing or reviewing layout in an existing repo:
 - If a module has an owner README, `SPEC.md`, design doc, or goal source of truth for UI behavior, read it before changing durable behavior.
 - Keep `DESIGN.md` for UI rules, visual standards, and design facts. Use `LAYOUT-PREVIEW.md` for route, mock data boundary, bypass, ready, viewport, and preview evidence instructions when app-style preview is relevant.
 - If translating from Figma/CSS, treat fixed pixels as design intent, not literal Flutter constraints.
+
+## Command Boundary
+
+Use a shared Flutter command boundary for layout work:
+
+- Default allowed: static reading, code edits, `dart analyze`,
+  `flutter analyze`, and targeted `dart test` / `flutter test test/...`
+  commands.
+- Conditionally allowed: `flutter test integration_test`,
+  `flutter run -d web-server`, hot reload, and screenshot/preview checks only
+  when the nearest `AGENTS.md`, `TEST.md`, `LOCAL.md`, or current user request
+  explicitly allows the exact command.
+- Separate confirmation required: real device or simulator install/run,
+  `flutter build`, release/package work, store/account/payment flows, and
+  mutable backend-state flows.
+
+Prefer code reasoning, widget tests, and project-approved Web preview for
+layout confidence before asking for device/runtime validation.
 
 ## Layout Brief
 
@@ -44,7 +62,8 @@ For new UI, screenshot/Figma restoration, or app-style preview work, treat the t
 3. Preview contract: if this is a real app page or flow, create, update, or skip `LAYOUT-PREVIEW.md` according to the trigger tiers.
 4. Real route preview: prefer the app's real route and shell over scenario-only routes.
 5. Mock data: prefer the API transport/gateway boundary; for non-API pages, use the narrowest external data source or adapter boundary.
-6. Web preview: use the project-allowed `main_preview.dart` or approved web-server path.
+6. Web preview: use the project-allowed `main_preview.dart` or approved
+   web-server path only when the command boundary allows it.
 7. Ready check: rely on developer judgment, aided by route, fixture, session, cache, mock-hit, and loading facts.
 8. Screenshot/layout review: inspect compact, medium, and wide viewports.
 9. Validation: run allowed static checks and focused tests.
@@ -63,6 +82,22 @@ Use `references/preview-workflow.md` when the task involves `LAYOUT-PREVIEW.md`,
 Read `references/layout-patterns.md` and `references/layout-pitfalls.md` together when creating a new screen, translating a design, making a structural layout change, or performing a complex layout fix. Use patterns to choose the structure and pitfalls to constrain the implementation. For app-style preview, also read `references/preview-workflow.md`. For a narrow review or overflow-only task, read `references/layout-pitfalls.md` first and load patterns only if the structure needs to change.
 
 Do not default to `600px => Row/Column`. Add breakpoints only when the information architecture changes at that size. Prefer continuous constraints, slivers, max widths, grids with max extents, and aspect ratios when they express the design better than discrete branching.
+
+## Responsive and Adaptive Layout
+
+Treat responsive layout as part of the layout brief, not as a separate cookbook step. First decide what wider or taller space should do for the user task: add a useful pane, reveal filters or navigation, increase grid density, preserve readable width, or keep the same structure.
+
+When adaptive behavior is needed:
+
+- Use `MediaQuery.sizeOf(context)` for whole-window facts and `MediaQuery.paddingOf` or `viewInsetsOf` for safe-area and keyboard facts.
+- Use `LayoutBuilder` only at the boundary where parent constraints decide structure.
+- Name breakpoints after the structural change they enable, such as `detailPaneMinWidth`, not generic values such as `largeScreenMinWidth`.
+- Introduce a breakpoint only when the layout's information architecture changes. Do not use `600` as a default.
+- Prefer `ConstrainedBox` plus `Center` for readable text and forms on wide screens.
+- Prefer `SliverGridDelegateWithMaxCrossAxisExtent` when a grid should add columns while tiles keep a useful width.
+- Use `Expanded` and `Flexible` after deciding which region owns remaining space.
+- Avoid hardware-type checks and orientation-driven branching as layout truth. Base layout decisions on available constraints.
+- If the product forces orientation lock, do not assume `MediaQuery` reports the physical display or all usable large-screen space. Treat it as a platform compatibility case and read `layout-pitfalls.md` before giving sizing guidance.
 
 ## Implementation Guidance
 

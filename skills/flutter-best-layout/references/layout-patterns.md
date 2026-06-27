@@ -2,6 +2,20 @@
 
 Choose a pattern from the user task, content hierarchy, and scroll model. Combine patterns when needed, but keep one primary layout owner for each axis.
 
+## Adaptive Sizing Primitives
+
+Use these primitives after the layout brief decides what should change across compact, medium, and wide constraints.
+
+- Whole-window facts: use `MediaQuery.sizeOf(context)` when route-level decisions depend on the app window.
+- Parent-allocated facts: use `LayoutBuilder` around the section or component whose parent constraints determine structure.
+- Safe areas and keyboard: use `MediaQuery.paddingOf(context)` and `MediaQuery.viewInsetsOf(context)` where those insets affect fixed actions, sheets, dialogs, or forms.
+- Remaining space: use `Expanded` and `Flexible` only inside a deliberate `Row`, `Column`, or `Flex` model.
+- Readable width: wrap text-heavy or form-heavy content in `ConstrainedBox` and usually center it on wide screens.
+- Responsive grids: use `SliverGridDelegateWithMaxCrossAxisExtent` when tile width matters more than a fixed column count.
+- Stable media and tiles: use `AspectRatio`, explicit `BoxFit`, and fixed placeholder/error geometry.
+
+Breakpoints are valid when they describe a real structural transition, such as compact route navigation becoming master-detail, a bottom bar becoming a navigation rail, or a filter drawer becoming a side panel. Name the threshold after that transition. Do not add a generic `largeScreenMinWidth = 600` branch just because the surface is resizable.
+
 ## Single-Column Detail or Reading Page
 
 Use for profile/detail/settings/about/content pages where reading order matters more than density.

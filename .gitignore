@@ -1,9 +1,10 @@
 .DS_Store
 **/.DS_Store
 
-# Keep this repository focused on the npx skill install tree.
+# Keep this repository focused on the installable skill tree.
 /*
 !/.gitignore
+!/CHANGELOG.md
 !/README.md
 !/LICENSE
 !/scripts/

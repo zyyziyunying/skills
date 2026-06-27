@@ -26,7 +26,26 @@ Avoid tests whose only value is:
 
 ## Agent Boundary
 
-[Say what Codex may run and what must be deferred.]
+Default allowed:
+
+- Static reading and code/doc edits.
+- `dart analyze` / `flutter analyze`.
+- Targeted `dart test` / `flutter test test/...`.
+
+Conditionally allowed when `AGENTS.md`, this document, or the current user
+request explicitly allows the exact command:
+
+- `flutter test integration_test`.
+- `flutter run -d web-server`.
+- Hot reload.
+- Screenshot or preview checks.
+
+Requires separate confirmation:
+
+- Real device or simulator install/run.
+- `flutter build`, release/package work, signing, or store upload.
+- Store/account/payment flows.
+- Mutable backend-state flows.
 
 ## Bug Reports
 

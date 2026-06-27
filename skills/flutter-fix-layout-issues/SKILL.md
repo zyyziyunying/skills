@@ -24,20 +24,42 @@ Diagnose layout failures using the following error signatures:
 *   **"Incorrect use of ParentData widget"**: Triggered when a `ParentDataWidget` is not a direct descendant of its required ancestor. (e.g., `Expanded` outside a `Flex`, `Positioned` outside a `Stack`).
 *   **"RenderBox was not laid out"**: A cascading side-effect error. Ignore this and look further up the stack trace for the primary constraint violation (usually an unbounded height/width error).
 
+## Command Boundary
+
+Use the Flutter command tiers while debugging layout failures:
+
+*   **Default allowed:** inspect code and logs, edit Dart, run `dart analyze`,
+    `flutter analyze`, and targeted `dart test` / `flutter test test/...`
+    commands.
+*   **Conditionally allowed:** run `flutter test integration_test`,
+    `flutter run -d web-server`, hot reload, or screenshot/preview checks only
+    when the project `AGENTS.md`, `TEST.md`, or the current user message
+    explicitly allows the exact command.
+*   **Separate confirmation required:** real device or simulator install/run,
+    `flutter build`, release/package work, store/account/payment flows, and
+    mutable backend-state flows.
+
+Prefer existing console output, screenshots, widget tests, and static code
+inspection before starting a preview/run session.
+
 ## Layout Error Resolution Workflow
 
 Copy and use this checklist to systematically resolve layout constraint violations.
 
 ### Task Progress
-- [ ] Run the application in debug mode to capture the exact layout exception in the console.
+- [ ] Capture the exact layout exception from existing logs, screenshots, tests,
+      or an authorized preview/run session.
 - [ ] Identify the primary error message (ignore cascading "RenderBox was not laid out" errors).
 - [ ] Apply the conditional fix based on the specific error type:
   - **If "Vertical viewport was given unbounded height"**: Wrap the scrollable child (`ListView`, `GridView`) in an `Expanded` widget to consume remaining space, or wrap it in a `SizedBox` to provide an absolute height constraint.
   - **If "An InputDecorator...cannot have an unbounded width"**: Wrap the `TextField` or `TextFormField` in an `Expanded` or `Flexible` widget.
   - **If "RenderFlex overflowed"**: Constrain the overflowing child by wrapping it in an `Expanded` widget (to force it to fit) or a `Flexible` widget (to allow it to be smaller than the allocated space).
   - **If "Incorrect use of ParentData widget"**: Move the `ParentDataWidget` to be a direct child of its required parent. Ensure `Expanded`/`Flexible` are direct children of `Row`/`Column`/`Flex`. Ensure `Positioned` is a direct child of `Stack`.
-- [ ] Execute Flutter hot reload.
-- [ ] Run validator -> review errors -> fix: Inspect the UI to verify the red/grey error screen or yellow/black overflow stripes are resolved. If new layout errors appear, repeat the workflow.
+- [ ] Run allowed static checks or focused tests.
+- [ ] When preview/run is authorized, hot reload or refresh the preview and
+      verify the red/grey error screen or yellow/black overflow stripes are
+      resolved. If runtime validation is not authorized, state the deferred
+      check explicitly.
 
 ## Examples
 

@@ -66,12 +66,18 @@ Bad signs:
 - Layout switches because the device is a phone/tablet instead of because available space changed.
 - Orientation is used as a proxy for width.
 - `600` is used as a magic breakpoint without explaining what changes at that size.
+- The app checks hardware type, screen class, or top-level orientation before considering the actual parent constraints.
+- A locked orientation requirement is treated as a layout fix instead of a product/platform constraint that must still be verified on large, foldable, and windowed displays.
 
 Better approaches:
 
 - Use parent constraints from `LayoutBuilder` where the layout boundary matters.
 - Use breakpoints only when the UI structure meaningfully changes.
 - Prefer continuous sizing, max widths, and max grid extents when they fit the problem.
+- Use whole-window facts from `MediaQuery.sizeOf(context)` only when the route-level window size is the relevant input.
+- If a product requirement forces orientation lock, call out the compatibility risk and validate the large-screen behavior explicitly.
+- In forced-orientation compatibility modes, do not assume `MediaQuery` reflects the physical display or all usable window space. If layout policy depends on physical display dimensions, use the project's platform adapter or Android Display API path instead of adding ad hoc UI-layer device checks.
+- Keep the fallback boundary explicit: UI code should consume a project-owned display/window fact, while platform-specific display measurement stays in the platform layer or an existing app service.
 
 ## Wide-Screen Behavior
 

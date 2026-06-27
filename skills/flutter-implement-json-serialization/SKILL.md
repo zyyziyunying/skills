@@ -29,8 +29,23 @@ For non-trivial edits, read:
 3. the nearest module `README.md` for the touched files
 4. `../../packages/common/AGENTS.md` only when editing shared `package:common`
 
-Do not run builds, app runs, simulators, or device flows. Prefer targeted
-`flutter test` commands for behavior changes.
+## Command Boundary
+
+Use the Flutter command tiers for validation:
+
+- Default allowed: static reading, code edits, `dart analyze`,
+  `flutter analyze`, and targeted `dart test` / `flutter test test/...`
+  commands.
+- Conditionally allowed: `flutter test integration_test`,
+  `flutter run -d web-server`, hot reload, and screenshot/preview checks only
+  when the nearest `AGENTS.md`, `TEST.md`, or current user request explicitly
+  allows the exact command.
+- Separate confirmation required: real device or simulator install/run,
+  `flutter build`, release/package work, store/account/payment flows, and
+  mutable backend-state flows.
+
+For this JSON skill, prefer the smallest parser, mapper, or repository tests
+that cover the behavior change.
 
 ## Core Contract
 

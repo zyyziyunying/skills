@@ -22,6 +22,20 @@ Ensure the testing environment is properly configured before authoring widget te
 2. Place all test files in the `test/` directory at the root of the project.
 3. Suffix all test file names with `_test.dart` (e.g., `widget_test.dart`).
 
+## Command Boundary
+
+Use the Flutter command tiers for widget-test work:
+
+*   **Default allowed:** static reading, code edits, `dart analyze`,
+    `flutter analyze`, and targeted `flutter test test/...` commands.
+*   **Conditionally allowed:** `flutter test integration_test`,
+    `flutter run -d web-server`, hot reload, and screenshot/preview checks only
+    when the nearest `AGENTS.md`, `TEST.md`, `LOCAL.md`, or current user request
+    explicitly allows the exact command.
+*   **Separate confirmation required:** real device or simulator install/run,
+    `flutter build`, release/package work, store/account/payment flows, and
+    mutable backend-state flows.
+
 ## Core Components
 
 Utilize the following `flutter_test` components to interact with and validate the widget tree:

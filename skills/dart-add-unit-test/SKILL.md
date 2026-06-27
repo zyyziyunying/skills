@@ -38,6 +38,13 @@ Select the appropriate test runner based on the project type and test location.
 * If working on a pure Dart project, execute tests using the `dart test` command.
 * If working on a Flutter project, execute tests using the `flutter test` command.
 * If running integration tests, explicitly specify the directory path, as the default runner ignores it: `dart test integration_test` or `flutter test integration_test`.
+* For Flutter projects, default to `dart analyze`, `flutter analyze`, and
+  targeted `dart test` / `flutter test test/...`. Run
+  `flutter test integration_test`, `flutter run -d web-server`, hot reload, or
+  screenshot/preview checks only when project guidance or the current user
+  request explicitly allows the exact command. Keep real device/simulator
+  install/run, `flutter build`, release/package work, store/account/payment
+  flows, and mutable backend-state flows behind separate confirmation.
 
 ## Test Implementation Workflow
 

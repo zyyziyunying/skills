@@ -11,11 +11,28 @@ Treat the work as a UI delivery pipeline:
 3. `LAYOUT-PREVIEW.md`: create, update, or skip the lightweight preview contract according to the trigger tiers below.
 4. Real route preview: use the app's real route when available; avoid creating scenario-only routes.
 5. Mock data: provide local responses through a mock API transport/gateway, or through the narrowest external adapter for non-API data.
-6. Web preview: when project guidance allows it, run the approved web-server entry and open the target route in the browser.
+6. Web preview: when project guidance or the current user request explicitly
+   allows it, run the approved web-server entry and open the target route in
+   the browser.
 7. Ready check: let the developer judge the UI, aided by route, fixture, session, cache, mock-hit, and loading facts.
 8. Screenshot/layout review: inspect compact, medium, and wide viewports.
 9. Validation: run allowed static checks and focused tests.
 10. Evidence: report screenshots/viewport notes, fixture changes, checks run, and remaining device/backend risks.
+
+## Command Boundary
+
+Use the Flutter command tiers for preview work:
+
+- Default allowed: static reading, code edits, `dart analyze`,
+  `flutter analyze`, and targeted `dart test` / `flutter test test/...`
+  commands.
+- Conditionally allowed: `flutter test integration_test`,
+  `flutter run -d web-server`, hot reload, and screenshot/preview checks only
+  when the nearest `AGENTS.md`, `TEST.md`, `LOCAL.md`, or current user request
+  explicitly allows the exact command.
+- Separate confirmation required: real device or simulator install/run,
+  `flutter build`, release/package work, store/account/payment flows, and
+  mutable backend-state flows.
 
 ## LAYOUT-PREVIEW.md Trigger Tiers
 

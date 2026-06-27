@@ -1,6 +1,6 @@
 ---
 name: flutter-project-harness
-description: Create or maintain project-level fact-source docs for Flutter apps, packages, plugins, examples, or workspace subprojects. Use when bootstrapping or refreshing SPEC.md, TEST.md, DESIGN.md, GENERATION.md, LOCAL.md, PACKAGING.md, AGENTS.md reading paths, and related project governance docs without running app builds or device commands.
+description: Create or maintain project-level fact-source docs for Flutter apps, packages, plugins, examples, or workspace subprojects. Use when bootstrapping or refreshing SPEC.md, TEST.md, DESIGN.md, GENERATION.md, LOCAL.md, PACKAGING.md, AGENTS.md reading paths, and related project governance docs while preserving project command boundaries.
 ---
 
 # Flutter Project Harness
@@ -31,7 +31,10 @@ Use only the relevant subset. A pure Dart package may not need `DESIGN.md` or `P
 4. Create missing files from the closest template in `assets/templates/`, then adapt the content to the actual project stage and platform.
 5. Update `AGENTS.md` so future work reads the right fact source before editing.
 6. Keep the docs short, current, and opinionated. Avoid PRD-sized detail, architecture dumps, stale checklists, or duplicating implementation docs.
-7. Do not run Flutter, Android, iOS, emulator, simulator, or device commands unless the user or the project's `AGENTS.md` explicitly allows the exact command.
+7. Preserve the Flutter command tiers in generated docs: default lightweight
+   static/test validation, conditional preview/run only with project or user
+   authorization, and separate confirmation for build/device/release/external
+   mutable flows.
 
 ## File Ownership Rules
 
@@ -46,8 +49,16 @@ Use only the relevant subset. A pure Dart package may not need `DESIGN.md` or `P
 ## Flutter Defaults
 
 - Treat root workspace validation policy as binding unless a nearer `AGENTS.md` narrows it.
-- For Flutter apps, Codex should not run build, run, install, emulator, simulator, or device commands by default.
-- For packages, prefer lightweight static/test validation only when the project rules allow it and dependencies are already available.
+- Default allowed validation should usually include static reading, docs/code
+  edits, `dart analyze`, `flutter analyze`, and targeted `dart test` /
+  `flutter test test/...` commands when dependencies are available.
+- Conditional validation may include `flutter test integration_test`,
+  `flutter run -d web-server`, hot reload, and screenshot/preview checks only
+  when `AGENTS.md`, `TEST.md`, `LOCAL.md`, or the current user request
+  explicitly allows the exact command.
+- Keep real device or simulator install/run, `flutter build`, release/package
+  work, store/account/payment flows, and mutable backend-state flows behind
+  separate confirmation.
 - For submodules, commit subproject documentation inside the submodule and commit parent submodule-pointer changes separately.
 - Use the current date in document headers.
 - If a source code file already exceeds or will exceed 2000 lines and the project uses a shared code-size rule, add the required code TODO in source files only; do not add code-size markers to Markdown docs.

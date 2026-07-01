@@ -11,7 +11,11 @@ Use this skill to package Flutter apps through a documented project release path
 
 ## Required Reads
 
-Before packaging, read the nearest `AGENTS.md`, then `SPEC.md`, `PACKAGING.md`, `TEST.md`, `LOCAL.md`, or a release goal/runbook when they exist. Treat `PACKAGING.md` as the human-readable packaging source of truth. If `PACKAGING.md` links a release agent contract, read it and `references/release-agent-contract.md` before asking for packaging parameters.
+Before packaging, read the nearest `AGENTS.md`, then `SPEC.md`, `PACKAGING.md`, `TEST.md`, `LOCAL.md`, or a release goal/runbook when they exist. Treat `PACKAGING.md` as the human-readable packaging source of truth.
+
+## Reference Routing
+
+Read `references/release-agent-contract.md` when `PACKAGING.md` links a release agent contract, when creating one for repeatable AI-assisted release packaging, or when interpreting a contract-backed release console; after reading, identify the contract fields that define allowed targets, required parameters, command/status endpoints, upload semantics, secret redaction, and evidence labels before asking for packaging parameters or running helper scripts.
 
 ## Hard Rules
 
@@ -62,7 +66,7 @@ Before packaging, read the nearest `AGENTS.md`, then `SPEC.md`, `PACKAGING.md`, 
 
 ## Release Agent Contract
 
-When a Flutter project needs repeatable AI-assisted release packaging, create a project-owned release agent contract instead of hardcoding project details into this skill. Read `references/release-agent-contract.md` for the field model and copy `assets/templates/release-agent-contract.json` as a starting point. Link the contract from `PACKAGING.md`.
+When a Flutter project needs repeatable AI-assisted release packaging, create a project-owned release agent contract instead of hardcoding project details into this skill. Use `assets/templates/release-agent-contract.json` as a starting point after reading the reference contract. Link the contract from `PACKAGING.md`.
 
 Recommended project-owned path:
 

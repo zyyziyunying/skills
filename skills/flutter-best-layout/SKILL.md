@@ -69,7 +69,11 @@ For new UI, screenshot/Figma restoration, or app-style preview work, treat the t
 9. Validation: run allowed static checks and focused tests.
 10. Evidence: report screenshots or observations, fixture changes, checks, and remaining risks.
 
-Use `references/preview-workflow.md` when the task involves `LAYOUT-PREVIEW.md`, `main_preview.dart`, app-style Web preview, mock data, Dart raw JSON responses, SDK/service bypasses, or ready-check evidence.
+## Reference Routing
+
+- Read `references/preview-workflow.md` when the task involves `LAYOUT-PREVIEW.md`, `main_preview.dart`, app-style Web preview, mock data, Dart raw JSON responses, SDK/service bypasses, or ready-check evidence; after reading, decide whether to create, update, or skip `LAYOUT-PREVIEW.md` and define the route, mock/bypass boundary, ready facts, viewport checks, and evidence.
+- Read `references/layout-patterns.md` when creating a new screen, translating a design, making a structural layout change, or choosing an adaptive layout model; after reading, choose the primary surface pattern, scroll owner, constraint model, and adaptive strategy.
+- Read `references/layout-pitfalls.md` when reviewing generated UI, fixing overflow, changing nested scrollables, handling orientation/large-screen constraints, or implementing non-trivial layout; after reading, identify concrete overflow, scroll, inset, text, media, and viewport risks and turn them into implementation constraints or validation checks.
 
 ## LAYOUT-PREVIEW.md Trigger Tiers
 
@@ -79,7 +83,7 @@ Use `references/preview-workflow.md` when the task involves `LAYOUT-PREVIEW.md`,
 
 ## Pattern Selection
 
-Read `references/layout-patterns.md` and `references/layout-pitfalls.md` together when creating a new screen, translating a design, making a structural layout change, or performing a complex layout fix. Use patterns to choose the structure and pitfalls to constrain the implementation. For app-style preview, also read `references/preview-workflow.md`. For a narrow review or overflow-only task, read `references/layout-pitfalls.md` first and load patterns only if the structure needs to change.
+For broad UI work, use the reference routing above to load patterns and pitfalls together. For a narrow review or overflow-only task, load pitfalls first and add patterns only if the structure needs to change.
 
 Do not default to `600px => Row/Column`. Add breakpoints only when the information architecture changes at that size. Prefer continuous constraints, slivers, max widths, grids with max extents, and aspect ratios when they express the design better than discrete branching.
 
@@ -125,7 +129,7 @@ When adaptive behavior is needed:
 
 ## Pitfall Check
 
-Read `references/layout-pitfalls.md` for any layout review, generated UI review, overflow fix, nested-scrollable change, or non-trivial layout implementation. Skip it only for tiny text/style edits that cannot affect constraints, scrolling, insets, or content size.
+Apply `references/layout-pitfalls.md` according to the routing contract above. Skip it only for tiny text/style edits that cannot affect constraints, scrolling, insets, or content size.
 
 Actively avoid:
 

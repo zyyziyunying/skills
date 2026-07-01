@@ -133,8 +133,8 @@ Prefer the wrapper unless the repository already standardizes on a global instal
 
 Open only what you need:
 
-- CLI command reference: `references/cli.md`
-- Practical workflows and troubleshooting: `references/workflows.md`
+- Read `references/cli.md` when you need command syntax, options, or artifact commands beyond the quick-start loop; after reading, choose the exact CLI command sequence and flags to run or report.
+- Read `references/workflows.md` when the task involves form flows, screenshots/PDF/traces, multi-tab work, troubleshooting, or a non-trivial browser interaction; after reading, choose the workflow path, re-snapshot points, artifact plan, and failure recovery step.
 
 ## Guardrails
 

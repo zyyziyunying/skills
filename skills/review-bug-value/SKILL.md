@@ -24,6 +24,11 @@ Before recommending a fix, establish:
 
 If the expected behavior cannot be tied to a requirement, product invariant, platform contract, security/privacy rule, data integrity rule, or clear user workflow, classify the item as a product question or low-value change request instead of a confirmed bug. Do not invent business value when goals, user impact, or product invariants are unclear.
 
+## Reference Routing
+
+- Read `references/severity-rubric.md` when the decision depends on P0/P1/P2/P3 severity boundaries, a severity/priority label is disputed, or project labels may mix impact with scheduling; after reading, assign or challenge impact severity separately from priority and tie the result to reachability, blast radius, workaround, and risk evidence.
+- Read `references/report-template.md` for larger reviews, multiple claims, stakeholder-facing triage, or when the answer needs a repeatable decision structure; after reading, produce a concise decision report with verdict, evidence, impact, recommendation, and follow-up questions.
+
 ## Workflow
 
 ### 1. Build The Claim
@@ -93,7 +98,7 @@ Challenge P1/P2 labels with:
 - Workaround: none, costly, acceptable, or trivial.
 - Fix risk: isolated, shared core path, migration/data risk, security risk.
 
-Read `references/severity-rubric.md` when the decision depends on impact severity boundaries. If a project uses P0/P1/P2/P3 as priority labels instead of severity labels, state that mapping explicitly.
+Apply `references/severity-rubric.md` according to the routing contract above. If a project uses P0/P1/P2/P3 as priority labels instead of severity labels, state that mapping explicitly.
 
 ### 6. Review The Fix Only After The Value Gate
 
@@ -118,7 +123,7 @@ Use direct validity labels. Do not use the decision label to encode scheduling: 
 - `False positive`: caused by stale tests, invalid assumptions, bad data, tooling, or artificial setup.
 - `Duplicate / known limitation`: already tracked or intentionally deferred.
 
-For larger reviews, read `references/report-template.md` and use its concise structure.
+For larger reviews, apply `references/report-template.md` according to the routing contract above.
 
 ## Working Style
 

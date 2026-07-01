@@ -6,12 +6,17 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import html
+import json
 from pathlib import Path
 import re
 import secrets
+import shutil
 import sys
 
 DEFAULT_STATUS = "draft"
+SHARED_CSS_HREF = "../_shared/goal.css"
+SKILL_ROOT = Path(__file__).resolve().parents[1]
+ASSET_CSS = SKILL_ROOT / "assets" / "goal.css"
 
 
 def validate_goal(value: str) -> str:
@@ -68,6 +73,19 @@ def unique_folder(root: Path, created: str, slug: str) -> Path:
     return root / "goals" / f"{created}-{slug}-{secrets.token_hex(3)}"
 
 
+def ensure_shared_css(root: Path) -> tuple[Path, bool]:
+    target = root / "goals" / "_shared" / "goal.css"
+    if target.exists():
+        if target.is_file():
+            return target, False
+        raise FileExistsError(f"shared CSS path exists but is not a file: {target}")
+    if not ASSET_CSS.is_file():
+        raise FileNotFoundError(f"bundled goal CSS asset is missing: {ASSET_CSS}")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(ASSET_CSS, target)
+    return target, True
+
+
 def build_html(title: str, goal: str, status: str, created: str) -> str:
     safe_title = html.escape(title)
     safe_goal = html.escape(goal)
@@ -79,75 +97,7 @@ def build_html(title: str, goal: str, status: str, created: str) -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{safe_title}</title>
-  <style>
-    :root {{
-      color-scheme: light;
-      --bg: #f6f8fb;
-      --panel: #ffffff;
-      --text: #172033;
-      --muted: #5f6b7a;
-      --line: #d9e1ec;
-      --accent: #255f85;
-      --accent-soft: #e8f3f8;
-    }}
-    body {{
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.62;
-    }}
-    main {{
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 48px 24px 72px;
-    }}
-    h1 {{
-      margin: 0 0 12px;
-      font-size: 34px;
-      line-height: 1.18;
-      letter-spacing: 0;
-    }}
-    h2 {{
-      margin: 34px 0 12px;
-      font-size: 22px;
-      letter-spacing: 0;
-    }}
-    p, li {{
-      font-size: 16px;
-    }}
-    ul {{
-      padding-left: 22px;
-    }}
-    .goal-line {{
-      margin: 0 0 18px;
-      padding: 16px 18px;
-      background: var(--accent-soft);
-      border-left: 4px solid var(--accent);
-      font-size: 18px;
-    }}
-    .meta {{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin: 20px 0 30px;
-    }}
-    .meta div, section {{
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 18px;
-    }}
-    .label {{
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 4px;
-    }}
-    a {{
-      color: var(--accent);
-    }}
-  </style>
+  <link rel="stylesheet" href="{SHARED_CSS_HREF}">
 </head>
 <body>
   <main>
@@ -233,6 +183,15 @@ def parse_args() -> argparse.Namespace:
             "for example subscription-global-analytics."
         ),
     )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="as_json",
+        help=(
+            "Print machine-readable creation metadata instead of only the "
+            "goal.html path."
+        ),
+    )
     parser.add_argument("goal", help="One-sentence goal.")
     return parser.parse_args()
 
@@ -256,12 +215,30 @@ def main() -> int:
     folder = unique_folder(root, created, slug)
     target = folder / "goal.html"
 
-    folder.mkdir(parents=True, exist_ok=True)
-    target.write_text(
-        build_html(title, goal, status, created),
-        encoding="utf-8",
-    )
-    print(target)
+    try:
+        shared_css_path, shared_css_created = ensure_shared_css(root)
+        folder.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            build_html(title, goal, status, created),
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    if args.as_json:
+        print(
+            json.dumps(
+                {
+                    "goal_html_path": str(target),
+                    "shared_css_path": str(shared_css_path),
+                    "shared_css_created": shared_css_created,
+                    "status": status,
+                },
+                ensure_ascii=False,
+            )
+        )
+    else:
+        print(target)
     return 0
 
 

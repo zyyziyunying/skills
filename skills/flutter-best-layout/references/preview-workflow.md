@@ -12,8 +12,9 @@ Treat the work as a UI delivery pipeline:
 4. Real route preview: use the app's real route when available; avoid creating scenario-only routes.
 5. Mock data: provide local responses through a mock API transport/gateway, or through the narrowest external adapter for non-API data.
 6. Web preview: when project guidance or the current user request explicitly
-   allows it, run the approved web-server entry and open the target route in
-   the browser.
+   allows it, reuse or ownership-safely clean up an existing same-project
+   web-server before running the approved preview entry and opening the target
+   route.
 7. Ready check: let the developer judge the UI, aided by route, fixture, session, cache, mock-hit, and loading facts.
 8. Screenshot/layout review: inspect compact, medium, and wide viewports.
 9. Validation: run allowed static checks and focused tests.
@@ -33,6 +34,78 @@ Use the Flutter command tiers for preview work:
 - Separate confirmation required: real device or simulator install/run,
   `flutter build`, release/package work, store/account/payment flows, and
   mutable backend-state flows.
+
+## Web-Server Lifecycle
+
+This workflow must not leak Flutter Web preview servers. Before any allowed
+`flutter run -d web-server`, run stale-preview discovery and decide whether to
+reuse, stop, or start:
+
+```sh
+screen -ls
+pgrep -af 'flutter|dart|frontend_server|web-server'
+lsof -nP -iTCP -sTCP:LISTEN
+```
+
+Rules:
+
+Discovery is broad; action is ownership-scoped. Classify discovered entries as
+current-task-owned, same-project reusable, same-project stale/conflicting, or
+unowned/unrelated before acting. Ignore self-matches from the discovery commands.
+
+- Match existing previews by project path, command, entrypoint, screen/session
+  name, listening port, parent/child relationship, and current-task records when
+  those facts are available.
+- For candidate PIDs, perform a second pass before classifying them:
+  `ps -o pid,ppid,pgid,etime,rss,vsz,command -p <pid>`, parent/child tree inspection,
+  and `lsof -nP -p <pid>` or equivalent cwd/listening-port checks.
+- Reuse a live same-project preview when it serves the required entrypoint and
+  route. Same-project does not mean current-task-owned.
+- Stop current-task-owned previews automatically. Stop same-project
+  stale/conflicting previews only when ownership or inactivity is clear enough to
+  make the action safe; otherwise leave them running, report them as unowned, or
+  ask for confirmation.
+- If a same-project stale/conflicting/unowned preview cannot be reused or safely
+  stopped, do not start another `flutter run -d web-server`. Skip preview or ask
+  the user to choose after reporting the existing PID/PGID, port, command, and
+  ownership uncertainty. Treat this as a blocking unresolved cleanup risk for
+  preview, especially when there is memory pressure or a port conflict.
+- Do not blindly allocate a new port when a same-project preview is already
+  running.
+- Do not start `flutter run -d web-server` with detached `screen`, `nohup`, bare
+  `&`, `disown`, `setsid`, or equivalent hidden background wrappers. Use a
+  current-task foreground child process or a managed current-task-owned preview
+  runner with an explicit cleanup guard. If the user asks for detached
+  operation, do not run it under this preview workflow; ask them to manage that
+  process outside the task or choose a non-detached preview.
+- When starting a preview, record the PID, process group ID, port, project path,
+  and exact startup command in task-local notes or final evidence. The preview
+  must run under a non-detached, current-task-owned dedicated process
+  group/session, or a controlled wrapper that creates or owns an equivalent
+  dedicated process group/session and can terminate all descendants. If that
+  cannot be established, do not start preview. Do not leave stale process IDs as
+  durable `LAYOUT-PREVIEW.md` facts.
+- Install the cleanup guard, timeout owner, and record container before creating
+  the process, using `trap`, `finally`, a timeout wrapper, or equivalent
+  task-owned cleanup guard. Immediately after spawn, capture PID/PGID, port, and
+  command inside that guard. Cleanup must cover startup failure, failed PID/PGID
+  capture, ready-check failure, browser/screenshot failure, user interrupt, and
+  task end.
+- At task end, stop only processes owned by the current task, then rerun the
+  discovery commands. Use `kill -TERM -<pgid>` only after confirming that PGID
+  is dedicated to the current-task preview. Use PID-tree cleanup only for
+  discovery or emergency remediation, not as the normal launch contract. Use
+  `kill -KILL` only for owned processes that remain after graceful termination.
+  If owned processes remain after cleanup, keep cleaning or report preview
+  cleanup as failed.
+- The final report must state what preview was reused, what was started, what
+  was stopped, and what same-project or Flutter/Dart/frontend_server/screen
+  processes or listening ports remain, including unowned related entries that
+  were intentionally not touched. For each related process, report PID, PPID,
+  PGID, start/elapsed time, cwd/project path, entrypoint/full command, listening
+  port, RSS/VSZ or equivalent memory evidence, ownership classification, and
+  action taken. Summarize remaining Flutter/Dart/frontend_server/screen memory
+  footprint when available. Mark cleanup failures explicitly.
 
 ## LAYOUT-PREVIEW.md Trigger Tiers
 
@@ -118,6 +191,8 @@ Notes:
 - Entry file: `lib/main_preview.dart`
 - Route to open: `<route>`
 - Web target if allowed by project docs: `flutter run -t lib/main_preview.dart -d web-server`
+- Process lifecycle: discover/reuse/cleanup per the Web-Server Lifecycle rules;
+  keep PID/port records in task-local evidence, not as stale durable facts.
 
 ## Ready Check
 
@@ -139,6 +214,12 @@ Developer judgment is authoritative. Use debug facts only to avoid false positiv
 - Viewports checked: <compact/medium/wide>
 - Screenshots or notes: <paths or summary>
 - Checks run: <format/analyze/test/manual browser check>
+- Preview lifecycle: <task-local final report must list reused/started/stopped/
+  remaining same-project or Flutter/Dart/frontend_server/screen processes with
+  PID, PPID, PGID, start/elapsed time, cwd/project path, entrypoint/full command,
+  listening port, RSS/VSZ or equivalent memory evidence, ownership
+  classification, action taken, cleanup failures; do not preserve these transient
+  process IDs as durable preview facts>
 - Remaining risk: <device/backend/native SDK/pixel precision/etc.>
 ```
 
@@ -212,4 +293,7 @@ Use a separate preview entry when the project supports app-style preview. It sho
 - Use browser screenshots for layout judgment; do not replace visual review with large hard-coded widget tests.
 - Ready check is primarily developer judgment. Debug overlay facts should prevent obvious false positives, not become a full automation platform.
 - Guard against stale UI by recording fixture version, expected data IDs, auth/session source, cache isolation or cleanup, and expected mock hit counts.
+- Guard against stale preview servers by running lifecycle discovery before
+  launch and after cleanup, and by reporting any remaining web-server,
+  frontend_server, Dart, Flutter, screen session, or listening port.
 - Record remaining real-device, native SDK, backend, or pixel-precision risks before finishing.

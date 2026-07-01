@@ -40,6 +40,48 @@ Use a shared Flutter command boundary for layout work:
 Prefer code reasoning, widget tests, and project-approved Web preview for
 layout confidence before asking for device/runtime validation.
 
+For allowed `flutter run -d web-server` preview work, treat the process
+lifecycle as part of the command boundary:
+
+- Before starting, check for stale or reusable previews with `screen -ls`,
+  `pgrep -af 'flutter|dart|frontend_server|web-server'`, and
+  `lsof -nP -iTCP -sTCP:LISTEN`. Treat this as broad discovery; filter results
+  by project path, command, port, session name, parent/child relationship, and
+  current-task ownership before taking action. For candidate PIDs, verify
+  PID/PPID/PGID, command, start time, RSS/VSZ, cwd, listening ports, and process
+  tree before deciding that a process is unrelated.
+- Reuse a live same-project preview when it matches the needed entrypoint and
+  route. Stop only current-task-owned previews, or previews that are clearly
+  stale/conflicting and safe to stop; otherwise skip or request confirmation.
+  Do not start a new web-server while an unowned same-project preview is stale,
+  conflicting, or not classifiable enough to reuse or stop safely. Treat that as
+  a blocking unresolved cleanup risk for preview until the user chooses
+  terminate, reuse, or skip this preview with risk; do not start another
+  web-server while unresolved.
+- Do not start `flutter run -d web-server` with detached `screen`, `nohup`, bare
+  `&`, `disown`, `setsid`, or equivalent hidden background wrappers. Use a
+  current-task foreground child process or a managed current-task-owned preview
+  runner with an explicit cleanup guard.
+- If a preview must be started, record the PID, process group ID, port, project
+  path, and full startup command. The preview must run under a non-detached,
+  current-task-owned dedicated process group/session, or a controlled wrapper
+  that creates or owns an equivalent dedicated process group/session and can
+  terminate all descendants. If that cannot be established, do not start
+  preview. Install the cleanup guard, timeout owner, and record container before
+  creating the process; immediately capture PID/PGID/port/command after spawn.
+  Cleanup must cover startup failure, failed PID/PGID capture, ready-check
+  failure, browser/screenshot failure, user interrupt, and task end. Stop only
+  the owned dedicated process group, then rerun the stale-preview checks. Use
+  PID-tree cleanup only for discovery or emergency remediation, not as the
+  normal launch contract.
+- Final reports for app-style preview work must state what preview was reused,
+  what was started, what was stopped, and what processes or ports remain. For
+  each related process, include PID, PPID, PGID, start/elapsed time, cwd/project
+  path, entrypoint/full command, listening port, RSS/VSZ or equivalent memory
+  evidence, ownership classification, and action taken. Summarize remaining
+  Flutter/Dart/frontend_server/screen memory footprint when available. Mark
+  cleanup failures explicitly.
+
 ## Layout Brief
 
 Before writing UI code, derive these decisions. Keep them internal for simple tasks; share a concise plan when the work is broad, ambiguous, or user-facing.
@@ -126,6 +168,8 @@ When adaptive behavior is needed:
 - Missing mock APIs must fail locally with method/path/query/body diagnostics. Do not silently call the real network.
 - Do not bind the workflow only to HTTP. For pages driven by local DB/cache, SDK streams, local state sources, or other non-API data, mock at the smallest external boundary that still exercises the real decode/adapter/page path.
 - Use SDK/service bypasses only for non-API capabilities such as payment, push, media picker, permissions, native SDKs, and system services. Record them in `LAYOUT-PREVIEW.md`.
+- Apply the web-server lifecycle rule before starting app-style preview. One
+  project should not accumulate multiple hidden preview servers across ports.
 
 ## Pitfall Check
 
@@ -152,4 +196,7 @@ Before finishing:
 - Verify the layout path for compact, medium, and wide constraints in code reasoning or screenshots if available.
 - Verify loading, empty, error, long text, and keyboard/inset behavior when they are relevant.
 - For app-style preview, verify `LAYOUT-PREVIEW.md` identifies the route, mock data boundary, bypasses, fixture version, expected data IDs, auth/session source, cache isolation or cleanup, expected mock hit count, viewports, and evidence. Confirm ready check is not just "page is nonblank."
+- If a web-server preview was used, verify same-project preview reuse/start/stop
+  records, ownership-scoped cleanup, and stale-preview checks before the final
+  report.
 - State any runtime or device validation that remains deferred to the user.

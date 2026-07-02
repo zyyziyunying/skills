@@ -1,13 +1,13 @@
 ---
 name: independent-review-subagent
-description: "Use only when the user explicitly invokes $independent-review-subagent. Opens a no-context-fork subagent for a bounded independent review/check/audit with only the scoped target and output requirements."
+description: "Use only when the user explicitly invokes $independent-review-subagent. Opens a no-context-fork subagent for a bounded independent review/check/audit; defaults to reliably isolated current-session changes when no target is supplied, otherwise asks for scope confirmation."
 ---
 
 # Independent Review Subagent
 
 ## Purpose
 
-Use this skill only when the user explicitly invokes `$independent-review-subagent`. It delegates a bounded read-only review/check/audit to a subagent while preserving independence. The default posture is: no context fork, minimal prompt, explicit scope, no parent conclusions, and no file edits.
+Use this skill only when the user explicitly invokes `$independent-review-subagent`. It delegates a bounded read-only review/check/audit to a subagent while preserving independence. The default posture is: no context fork, minimal prompt, bounded scope, no parent conclusions, and no file edits.
 
 ## Trigger Contract
 
@@ -19,8 +19,13 @@ If the user asks for an "independent review" or similar wording without writing 
 
 1. Confirm the scope.
    - Use the user's provided files, directories, URLs, screenshots, diffs, or task boundaries.
-   - If the scope is missing or ambiguous enough that the subagent could inspect the wrong target, ask one concise question.
+   - If the user provides no explicit target, default to reviewing the current session's changes in the active repository or workspace only when those changes can be reliably isolated from pre-existing dirty work.
+   - Build that default target from neutral local evidence that isolates current-session touched paths and hunks: a session-start baseline or diff snapshot, hunk-level tool edit record, or equivalent evidence covering edited, created, deleted, renamed, and moved paths.
+   - A path list alone is not enough for files that might already be dirty. With only path-level evidence, ask one concise question to confirm the target or whether to review the current dirty diff for those paths.
+   - When using the default target, pass only the isolated paths, hunks, diffs, or necessary file contents to the subagent; do not pass parent-thread reasoning, conclusions, suspicions, or conversation history.
+   - If current-session changes cannot be separated from pre-existing dirty work, same-file mixed edits, or no local changed target exists, ask one concise question.
    - Do not expand the scope unless the user asks for a broader review.
+   - Do not silently review the whole working tree unless it is the confirmed or clearly current-session scope.
 
 2. Spawn the subagent.
    - Use `fork_context: false`.
@@ -44,7 +49,7 @@ If the user asks for an "independent review" or similar wording without writing 
 独立审核以下范围，不要修改文件。
 
 范围：
-- <path, diff, URL, artifact, or bounded target>
+- <explicit target, or reliably isolated current-session changes; otherwise confirmed target/current dirty diff>
 
 输出：只列问题、风险和必要改进建议，按严重程度排序。每个 finding 必须包含 severity、证据路径/行号、风险理由和必要改进。如果没有问题，明确说明已检查范围和未覆盖范围。
 ```

@@ -52,12 +52,14 @@ Bad signs:
 - `FittedBox`, `Transform.scale`, or text scaling wrappers are used to hide overflow instead of designing wrapping, scrolling, or constraints.
 - Post-frame measurement, `GlobalKey` size reads, or layout callbacks are used to drive ordinary responsive layout.
 - Layout fixes depend on measuring rendered children instead of expressing constraints in the parent.
+- Blur, opacity, clipping, or overlays are used to hide old screenshot UI underneath rebuilt Flutter text, controls, or purchase panels.
 
 Better approaches:
 
 - Express the intended bounds with `Expanded`, `Flexible`, `AspectRatio`, `ConstrainedBox`, slivers, or max widths before reaching for intrinsic measurement.
 - Use intrinsic widgets only for small, bounded, low-frequency surfaces where the cost and behavior are intentional.
 - Fix text and action overflow with wrapping, max lines, priority rules, overflow menus, or responsive reflow rather than shrinking the entire child.
+- Re-export or crop clean media/background assets when rebuilding UI from screenshots. If old UI remains in the source image, report it as a prototype shortcut.
 
 ## Breakpoints and Orientation
 
@@ -116,12 +118,14 @@ Bad signs:
 - Constrained rows contain long text without `Expanded`, wrapping, max lines, or overflow.
 - Labels assume English length.
 - Large text scale causes button or card overflow.
+- Underlined, colored, chevroned, or button-like text is visually presented as a link or action but has no tap/focus/semantic behavior.
 
 Better approaches:
 
 - Decide whether text wraps, truncates, or moves to a second line.
 - Use `Expanded` around flexible text in rows.
 - Test with long strings and larger text scale in reasoning or local UI checks when available.
+- Make visual links and restore actions real controls with semantic labels, or make them look like plain text and disclose prototype-only shortcuts.
 
 ## Media and Aspect Ratios
 
@@ -144,12 +148,15 @@ Bad signs:
 - `Stack` positions controls over content without reserving tappable or readable space.
 - Positioned elements use magic offsets that fail on insets or text scale.
 - Overlay actions intercept scroll or focus unexpectedly.
+- Live text, price, legal links, restore actions, purchase panels, or primary CTA are `Positioned` without proving they survive long content, large text, short height, and safe-area changes.
+- A mock status bar or fixed top/bottom chrome shifts content by hand-tuned offsets instead of participating in the route or scaffold layout.
 
 Better approaches:
 
 - Use safe-area-aware positioning.
 - Reserve content padding for overlays when the underlying content scrolls.
 - Prefer normal layout flow unless overlay behavior is truly needed.
+- Keep live text and transactional actions in normal layout flow, slivers, or pinned safe regions. If an overlay is required, define the collision strategy and verify narrow width, short height, text scale, and dynamic content.
 
 ## Finish Checklist
 
@@ -160,6 +167,9 @@ Before finishing a layout change, verify:
 - Loading, empty, error, and long-content states fit the same layout contract.
 - Keyboard and safe-area behavior is accounted for when relevant.
 - Images and fixed-format elements have stable geometry.
+- Screenshot/Figma source images do not ship with rebuilt UI still visible underneath, unless that is explicitly prototype-only.
+- Visual links, restore actions, purchase actions, and button-like text are real controls with semantics or are explicitly disclosed as prototype-only.
+- `Stack`/`Positioned` live text, CTA, legal, price, and purchase regions have a collision strategy for long content, text scale, short height, and safe areas.
 - Intrinsic measurement, `FittedBox`, and post-frame measurement hacks are absent or explicitly justified.
 - Wide screens either add useful structure or preserve comfortable content width.
 - Any remaining device/runtime validation is explicitly deferred.

@@ -43,7 +43,7 @@ For a small overflow fix, identify the scroll owner and constraints. For a new p
 5. Constraint model: Define width, height, aspect ratio, min/max, and safe-area constraints for fragile elements.
 6. Adaptive behavior: Decide whether wider space should add columns, reveal side panels, increase density, preserve readable width, or keep the same structure.
 7. State coverage: Account for loading, empty, error, long text, localization, text scale, keyboard, insets, and unavailable media.
-8. Interaction model: Account for touch targets, keyboard traversal where relevant, gestures, scrolling, focus, and primary actions.
+8. Interaction model: Account for touch targets, keyboard traversal where relevant, gestures, scrolling, focus, and primary actions. Anything styled like a link, button, restore action, purchase action, or disclosure must either be a real interactive affordance with semantics or be called out as a prototype shortcut.
 
 Keep the brief internal for narrow changes. Share a concise plan when the work is broad, ambiguous, user-facing, or likely to change structure.
 
@@ -61,12 +61,13 @@ For broad UI work, load the responsive, pattern, and pitfall references together
 For new UI, screenshot/Figma restoration, layout refactor, or app-style preview work:
 
 1. Understand the screenshot, Figma/CSS, product description, existing page, or target route.
-2. Complete the layout brief and classify the surface before choosing widgets.
-3. Choose the primary pattern and scroll owner; introduce breakpoints only for real structure changes.
-4. Translate fixed design sizes into aspect ratios, min/max constraints, padding, natural height, and scroll behavior.
-5. Implement with local constraints at the component boundary; do not scatter global screen-width guesses through leaves.
-6. If this is a real app page or flow, create, update, or skip `LAYOUT-PREVIEW.md` according to the trigger tiers.
-7. Validate with allowed static checks, targeted tests, and project-approved preview evidence.
+2. Classify source images and screenshots as pure media/background, reference-only, or UI that must be rebuilt. Do not place an image that still contains rebuilt live UI under final widgets unless the result is explicitly prototype-only and disclosed.
+3. Complete the layout brief and classify the surface before choosing widgets.
+4. Choose the primary pattern and scroll owner; introduce breakpoints only for real structure changes.
+5. Translate fixed design sizes into aspect ratios, min/max constraints, padding, natural height, and scroll behavior.
+6. Implement with local constraints at the component boundary; do not scatter global screen-width guesses through leaves.
+7. If this is a real app page or flow, create, update, or skip `LAYOUT-PREVIEW.md` according to the trigger tiers.
+8. Validate with allowed static checks, targeted tests, and project-approved preview evidence.
 
 ## LAYOUT-PREVIEW.md Trigger Tiers
 
@@ -80,8 +81,10 @@ Before finishing:
 
 - Run allowed static checks unless project instructions, user constraints, or missing dependencies explicitly defer them.
 - Inspect the changed code against `references/responsive-layout.md` and `references/layout-pitfalls.md`.
+- Apply the default layout gate in `references/responsive-layout.md`; for screenshot/Figma UI with CTA, price, legal, forms, or purchase panels, smoke tests that only prove text exists are not layout validation.
 - Verify compact, medium, and wide behavior by code reasoning, widget tests, or screenshots when available.
-- Verify loading, empty, error, long text, localization, text scale, keyboard, and inset behavior when relevant.
+- Verify loading, empty, error, long text, localization, text scale, narrow width, short height, keyboard, semantics, and inset behavior when relevant.
 - For app-style preview, verify `LAYOUT-PREVIEW.md` identifies the route, mock data boundary, bypasses, fixture version, expected data IDs, auth/session source, cache isolation or cleanup, expected mock hit count, viewports, and evidence. Confirm ready check is not just "page is nonblank."
 - If a web-server preview was used, report preview reuse/start/stop/remaining-process evidence from `references/preview-workflow.md`.
+- If visual fidelity required prototype shortcuts such as screenshot UI used as background, fake status bars, empty callbacks, hard-coded purchase data, or non-interactive visual links, report them explicitly instead of presenting the UI as production-complete.
 - State any real-device, simulator, build, backend, native SDK, or payment validation that remains deferred to the user.

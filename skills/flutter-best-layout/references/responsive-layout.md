@@ -11,6 +11,7 @@ Use this reference when implementing, reviewing, or refactoring Flutter UI where
 - [Fixed Design Canvas](#fixed-design-canvas)
 - [Anti-Patterns](#anti-patterns)
 - [Code Review Checklist](#code-review-checklist)
+- [Default Layout Gate](#default-layout-gate)
 - [Refactor Checklist](#refactor-checklist)
 - [Short Patterns](#short-patterns)
 
@@ -96,6 +97,12 @@ For text, forms, checkout/purchase panels, error states, and localized content:
 
 Do not scale an entire page to make a screenshot fit. Translate the design into Flutter constraints and state behavior.
 
+For screenshot or Figma-image restoration, classify each source asset before implementation:
+
+- Pure media/background: can be used as an image slot or fixed-format scene.
+- Reference-only: should guide rebuilt Flutter layout but not ship as visible UI.
+- Contains UI to rebuild: status bars, text, buttons, prices, legal links, panels, or controls must be rebuilt as Flutter widgets. Do not leave the old UI in the image and cover it with blur, wash, or duplicate widgets unless the result is explicitly prototype-only and reported as such.
+
 ## Anti-Patterns
 
 Treat these as review blockers unless the code has a narrow, documented reason:
@@ -109,6 +116,9 @@ Treat these as review blockers unless the code has a narrow, documented reason:
 - Breakpoints copied as `600`/`840` without naming the structural change.
 - Remote images or loaded media dimensions allowed to decide page geometry.
 - Long price, title, SKU, legal, or localized strings placed in rows without `Expanded`, wrapping, max lines, or explicit overflow behavior.
+- Screenshot/Figma images that still contain the same live UI being rebuilt, then hide the old UI with blur, opacity, local masking, or overlay widgets.
+- Live text, price, CTA, legal links, restore actions, forms, or purchase panels placed in `Stack`/`Positioned` regions without a collision strategy for long content, large text, safe areas, and short heights.
+- Underlined, colored, chevroned, or button-like text that has no tap handler, focus path, semantic action, disabled state, or explicit prototype disclosure.
 
 ## Code Review Checklist
 
@@ -116,14 +126,38 @@ Check these before approving or finishing a layout change:
 
 - Layout truth: Does each responsive branch use local parent constraints or a justified route-level window fact?
 - Scroll owner: Is there one primary scroll owner per axis, with lazy lists/grids kept lazy?
+- Source assets: Are screenshot/Figma images separated into clean media assets versus UI that must be rebuilt as Flutter widgets?
 - Safe area: Are fixed top/bottom chrome, overlays, sheets, dialogs, and actions safe-area aware?
 - Keyboard/viewInsets: Can focused fields, validation errors, purchase actions, and sheet actions remain reachable?
 - Text scale and localization: Do labels, buttons, prices, legal text, and errors survive longer strings and larger text?
 - Fixed design sizes: Are artboard/media/illustration dimensions separated from text/form/purchase behavior?
+- Semantic affordance: Are visual links, buttons, restore actions, and purchase actions real controls with labels, focus/tap behavior, and disabled or unavailable states?
 - Compact/medium/wide: Is behavior intentional in all three validation buckets, even if no breakpoint exists?
 - States: Do loading, empty, error, unavailable media, and long-data states obey the same constraints?
 - Breakpoints: Does each threshold name a structure, not a device class or magic number?
+- Prototype shortcuts: Are fake status bars, empty callbacks, screenshot-contained UI, hard-coded purchase data, and non-interactive links reported instead of presented as production-complete?
 - Validation boundary: Have default static checks or targeted widget tests run, and are device/simulator/run/build checks clearly deferred when they require confirmation?
+
+## Default Layout Gate
+
+For Flutter UI implementation or review, run the strongest layout checks allowed by the current task before escalating to run/build/device validation.
+
+Default allowed checks:
+
+- Static scan: inspect changed widgets for `RenderFlex` overflow risk, fixed dimensions around growing text, unbounded nested scrollables, route-level `MediaQuery` leaking into reusable leaves, whole-page scaling, and `Stack`/`Positioned` magic offsets.
+- Constraint reasoning: identify the primary scroll owner per axis, the nearest parent constraint for each responsive branch, and compact/medium/wide behavior even when no breakpoint exists.
+- Narrow and short viewport reasoning: verify primary content and actions remain reachable under narrow width and short height; fixed top/bottom actions must account for safe area, keyboard, and scroll reachability.
+- Text scale and localization reasoning: check long labels, prices, legal text, errors, CJK or German-like expansion, multiline buttons, and larger text scale. Prefer natural height, wrapping, `Expanded`, max lines, overflow menus, or scroll over page-level scaling or clamping.
+- Widget-test gate: when the project has a test harness and the task allows test edits, prefer targeted `flutter test test/...` cases with constrained surface size, larger text scaling, long fixture strings when injectable, semantics checks, and `tester.takeException()` for layout exceptions.
+- Semantic affordance: verify tappable-looking controls are real `Button`, `InkWell`, link recognizer, semantic action, or a `GestureDetector` paired with `Semantics`/focus behavior, labels, adequate hit area, and disabled state when unavailable.
+- Visual links without actions: flag underlined text, link colors, chevrons, card rows, icons, or CTA-looking surfaces that have no handler, route, callback, semantic action, or disabled explanation.
+- Fixed `Stack` collision review: for every `Stack` with `Positioned`, overlays, badges, or fixed artboard geometry, reason through narrow width, short height, large text, safe area, and dynamic content. Use `AspectRatio`, bounds, wrapping, normal flow, pinned safe actions, or scroll instead of overlapping live text/actions.
+
+Report before finishing:
+
+- Checks run: static scan, analyze/test, widget test, screenshot, or code reasoning.
+- Viewport buckets covered: compact, medium, wide, plus any short-height or narrow-width case that matters.
+- Cases explicitly deferred: preview screenshots, web-server, simulator/device, build, backend, native SDK, payment, or production data validation.
 
 ## Refactor Checklist
 
@@ -136,8 +170,9 @@ Use this order when fixing a fragile responsive layout:
 5. Consolidate nested scrollables into slivers or bound the inner scrollable for a specific reason.
 6. Add safe-area and `viewInsets` handling for fixed actions, dialogs, sheets, and forms.
 7. Give media and fixed-format content stable aspect ratios or scale-down bounds.
-8. Verify long strings, text scale, localization, error states, and compact/medium/wide constraints.
-9. Run allowed analyze/test commands; use widget tests for deterministic size/text cases when the project has a test harness.
+8. Convert visual links/buttons/restore actions into real controls or disclose prototype-only affordances.
+9. Verify long strings, text scale, localization, semantic affordances, error states, and compact/medium/wide constraints.
+10. Run allowed analyze/test commands; use widget tests for deterministic size/text/semantics cases when the project has a test harness.
 
 ## Short Patterns
 

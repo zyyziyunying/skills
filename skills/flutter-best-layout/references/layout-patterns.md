@@ -54,12 +54,14 @@ Prefer:
 - `MediaQuery.viewInsetsOf(context).bottom` when keyboard behavior affects layout.
 - `SafeArea` around fixed actions.
 - `AutofillGroup`, focus traversal, and meaningful input actions when appropriate.
+- Real controls and semantics for gift-code links, restore actions, legal links, and purchase actions. If a visual affordance is intentionally unavailable in a prototype, disclose it and avoid making it look production-ready.
 
 Avoid:
 
 - Fixed-height forms that break when validation messages appear.
 - Submit buttons hidden behind keyboard.
 - Independent scroll views inside field groups.
+- Purchase, legal, restore, or gift-code text that looks tappable but is only styled text.
 
 ## Feed or List Page
 
@@ -148,6 +150,22 @@ Avoid:
 - Letting remote image dimensions determine page geometry.
 - Overlays that hide controls under system insets.
 - Text blocks floating over busy media without contrast handling.
+
+## Media + Purchase Landing
+
+Use when a media-heavy hero or branded scene also contains a purchase, subscription, donation, or upgrade decision.
+
+Structure:
+
+- Media can keep a fixed ratio or fixed-format treatment when it is genuinely visual content.
+- Price, CTA, legal copy, gift codes, restore actions, errors, and availability states follow checkout/purchase rules, not artboard rules.
+- The purchase region needs natural height, min/max constraints, safe-area/inset handling, and scroll reachability when content grows.
+
+Avoid:
+
+- Treating the whole page as a fixed poster because the background is illustrative.
+- Placing purchase decisions, terms, or restore actions inside screenshot images or fragile `Positioned` overlays.
+- Shipping visual links or empty callbacks without explicit prototype disclosure.
 
 ## Dashboard or Operational Screen
 

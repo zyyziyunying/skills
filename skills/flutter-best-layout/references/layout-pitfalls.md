@@ -67,11 +67,13 @@ Bad signs:
 - Orientation is used as a proxy for width.
 - `600` is used as a magic breakpoint without explaining what changes at that size.
 - The app checks hardware type, screen class, or top-level orientation before considering the actual parent constraints.
+- Leaf widgets use global `screenWidth` or route-level `MediaQuery.sizeOf(context).width` even though a parent may allocate a narrower panel, card, or split-pane region.
 - A locked orientation requirement is treated as a layout fix instead of a product/platform constraint that must still be verified on large, foldable, and windowed displays.
 
 Better approaches:
 
 - Use parent constraints from `LayoutBuilder` where the layout boundary matters.
+- Keep route-level window decisions at the route/scaffold boundary; use local `LayoutBuilder` constraints for reusable panels, cards, rows, and list items.
 - Use breakpoints only when the UI structure meaningfully changes.
 - Prefer continuous sizing, max widths, and max grid extents when they fit the problem.
 - Use whole-window facts from `MediaQuery.sizeOf(context)` only when the route-level window size is the relevant input.

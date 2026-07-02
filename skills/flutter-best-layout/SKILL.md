@@ -1,15 +1,15 @@
 ---
 name: flutter-best-layout
-description: Plan, review, preview, and implement high-quality Flutter UI flows and layouts. Use when creating, reviewing, fixing, or translating Flutter UI, including responsive/adaptive layouts, overflow and constraint reasoning, screen/window sizing, orientation-sensitive surfaces, fixed Figma/CSS dimensions, first-screen visibility, image/card/dialog sizing, mobile/tablet/desktop form factors, LAYOUT-PREVIEW.md, app-style Web preview, or API mock data for UI checks.
+description: Plan, review, preview, refactor, and implement high-quality Flutter UI layouts. Use when creating, reviewing, fixing, or translating Flutter UI, including responsive/adaptive layout, overflow and constraint reasoning, Figma or screenshot implementation, fixed design canvas adaptation, screen/window sizing, dialog/sheet/media/list/grid/form/master-detail surfaces, layout review/refactor, LAYOUT-PREVIEW.md, app-style Web preview, or API mock data for UI checks.
 ---
 
 # Flutter Best Layout
 
 ## Core Rule
 
-Design the UI flow before choosing widgets. Do not treat Flutter UI work as a reflexive `Column`, `Row`, `LayoutBuilder`, breakpoint, or fake-repository exercise. First derive the layout and preview contract, then choose the smallest widget and preview structure that satisfies it.
+Start from the user task, content hierarchy, and parent constraints before choosing widgets. Flutter layout is constraints down, sizes up, and parent positions; use the nearest parent constraints as the layout truth for local components.
 
-Scale the depth of analysis to the task. For a small overflow fix, identify the scroll owner and constraints. For a new page or major UI rewrite, complete the full layout brief. For a real app page that should be checked in Web preview, define or update `LAYOUT-PREVIEW.md` according to the trigger tiers below before wiring mock data or changing code broadly.
+Do not treat Flutter UI work as a reflexive `Column`, `Row`, `LayoutBuilder`, breakpoint, fixed Figma pixel, or fake-repository exercise. First derive the layout and preview contract, then choose the smallest widget and preview structure that satisfies it.
 
 ## Required Context
 
@@ -24,98 +24,49 @@ Before implementing or reviewing layout in an existing repo:
 
 ## Command Boundary
 
-Use a shared Flutter command boundary for layout work:
+Use the shared Flutter command tiers for layout work:
 
-- Default allowed: static reading, code edits, `dart analyze`,
-  `flutter analyze`, and targeted `dart test` / `flutter test test/...`
-  commands.
-- Conditionally allowed: `flutter test integration_test`,
-  `flutter run -d web-server`, hot reload, and screenshot/preview checks only
-  when the nearest `AGENTS.md`, `TEST.md`, `LOCAL.md`, or current user request
-  explicitly allows the exact command.
-- Separate confirmation required: real device or simulator install/run,
-  `flutter build`, release/package work, store/account/payment flows, and
-  mutable backend-state flows.
+- Default allowed: static reading, code edits, `dart analyze`, `flutter analyze`, and targeted `dart test` or `flutter test test/...` commands.
+- Conditionally allowed: `flutter test integration_test`, `flutter run -d web-server`, hot reload, and screenshot/preview checks only when the nearest `AGENTS.md`, `TEST.md`, `LOCAL.md`, or current user request explicitly allows the exact command.
+- Separate confirmation required: real device or simulator install/run, `flutter build`, release/package work, store/account/payment flows, and mutable backend-state flows.
 
-Prefer code reasoning, widget tests, and project-approved Web preview for
-layout confidence before asking for device/runtime validation.
-
-For allowed `flutter run -d web-server` preview work, treat the process
-lifecycle as part of the command boundary:
-
-- Before starting, check for stale or reusable previews with `screen -ls`,
-  `pgrep -af 'flutter|dart|frontend_server|web-server'`, and
-  `lsof -nP -iTCP -sTCP:LISTEN`. Treat this as broad discovery; filter results
-  by project path, command, port, session name, parent/child relationship, and
-  current-task ownership before taking action. For candidate PIDs, verify
-  PID/PPID/PGID, command, start time, RSS/VSZ, cwd, listening ports, and process
-  tree before deciding that a process is unrelated.
-- Reuse a live same-project preview when it matches the needed entrypoint and
-  route. Stop only current-task-owned previews, or previews that are clearly
-  stale/conflicting and safe to stop; otherwise skip or request confirmation.
-  Do not start a new web-server while an unowned same-project preview is stale,
-  conflicting, or not classifiable enough to reuse or stop safely. Treat that as
-  a blocking unresolved cleanup risk for preview until the user chooses
-  terminate, reuse, or skip this preview with risk; do not start another
-  web-server while unresolved.
-- Do not start `flutter run -d web-server` with detached `screen`, `nohup`, bare
-  `&`, `disown`, `setsid`, or equivalent hidden background wrappers. Use a
-  current-task foreground child process or a managed current-task-owned preview
-  runner with an explicit cleanup guard.
-- If a preview must be started, record the PID, process group ID, port, project
-  path, and full startup command. The preview must run under a non-detached,
-  current-task-owned dedicated process group/session, or a controlled wrapper
-  that creates or owns an equivalent dedicated process group/session and can
-  terminate all descendants. If that cannot be established, do not start
-  preview. Install the cleanup guard, timeout owner, and record container before
-  creating the process; immediately capture PID/PGID/port/command after spawn.
-  Cleanup must cover startup failure, failed PID/PGID capture, ready-check
-  failure, browser/screenshot failure, user interrupt, and task end. Stop only
-  the owned dedicated process group, then rerun the stale-preview checks. Use
-  PID-tree cleanup only for discovery or emergency remediation, not as the
-  normal launch contract.
-- Final reports for app-style preview work must state what preview was reused,
-  what was started, what was stopped, and what processes or ports remain. For
-  each related process, include PID, PPID, PGID, start/elapsed time, cwd/project
-  path, entrypoint/full command, listening port, RSS/VSZ or equivalent memory
-  evidence, ownership classification, and action taken. Summarize remaining
-  Flutter/Dart/frontend_server/screen memory footprint when available. Mark
-  cleanup failures explicitly.
+Prefer code reasoning, widget tests, and project-approved Web preview for layout confidence before asking for device/runtime validation. Before any allowed `flutter run -d web-server`, read `references/preview-workflow.md` and follow its reuse, ownership, cleanup, and final reporting rules.
 
 ## Layout Brief
 
-Before writing UI code, derive these decisions. Keep them internal for simple tasks; share a concise plan when the work is broad, ambiguous, or user-facing.
+For a small overflow fix, identify the scroll owner and constraints. For a new page or major UI rewrite, derive these decisions before writing UI code:
 
 1. User task: Identify the main thing the user is trying to do or understand.
 2. Content priority: Decide what must be visible first, what can scroll, and what can be deferred.
-3. Surface type: Classify the screen as reading/detail, form, feed/list, grid/gallery, master-detail, media, dashboard, tool/workspace, dialog, sheet, or hybrid.
+3. Surface type: Classify the screen as form/flow, media-heavy, list/grid, checkout/purchase panel, dialog/sheet, master-detail, reading/detail, dashboard, tool/workspace, or hybrid.
 4. Scroll ownership: Choose exactly one primary scroll owner per axis. Decide which regions are fixed, sticky, or independently scrollable.
-5. Constraint model: Define width, height, aspect-ratio, min/max, and safe-area constraints for fragile elements.
-6. Adaptive behavior: Decide whether wider space should add columns, reveal side panels, increase density, preserve readable width, or keep the same layout.
+5. Constraint model: Define width, height, aspect ratio, min/max, and safe-area constraints for fragile elements.
+6. Adaptive behavior: Decide whether wider space should add columns, reveal side panels, increase density, preserve readable width, or keep the same structure.
 7. State coverage: Account for loading, empty, error, long text, localization, text scale, keyboard, insets, and unavailable media.
 8. Interaction model: Account for touch targets, keyboard traversal where relevant, gestures, scrolling, focus, and primary actions.
 
-## UI Delivery Workflow
-
-For new UI, screenshot/Figma restoration, or app-style preview work, treat the task as a UI delivery pipeline:
-
-1. Design input: understand the screenshot, Figma/CSS, product description, existing page, or target route.
-2. Layout brief: decide task, priority, surface type, scroll owner, constraints, responsive behavior, and states.
-3. Preview contract: if this is a real app page or flow, create, update, or skip `LAYOUT-PREVIEW.md` according to the trigger tiers.
-4. Real route preview: prefer the app's real route and shell over scenario-only routes.
-5. Mock data: prefer the API transport/gateway boundary; for non-API pages, use the narrowest external data source or adapter boundary.
-6. Web preview: use the project-allowed `main_preview.dart` or approved
-   web-server path only when the command boundary allows it.
-7. Ready check: rely on developer judgment, aided by route, fixture, session, cache, mock-hit, and loading facts.
-8. Screenshot/layout review: inspect compact, medium, and wide viewports.
-9. Validation: run allowed static checks and focused tests.
-10. Evidence: report screenshots or observations, fixture changes, checks, and remaining risks.
+Keep the brief internal for narrow changes. Share a concise plan when the work is broad, ambiguous, user-facing, or likely to change structure.
 
 ## Reference Routing
 
-- Read `references/preview-workflow.md` when the task involves `LAYOUT-PREVIEW.md`, `main_preview.dart`, app-style Web preview, mock data, Dart raw JSON responses, SDK/service bypasses, or ready-check evidence; after reading, decide whether to create, update, or skip `LAYOUT-PREVIEW.md` and define the route, mock/bypass boundary, ready facts, viewport checks, and evidence.
-- Read `references/layout-patterns.md` when creating a new screen, translating a design, making a structural layout change, or choosing an adaptive layout model; after reading, choose the primary surface pattern, scroll owner, constraint model, and adaptive strategy.
-- Read `references/layout-pitfalls.md` when reviewing generated UI, fixing overflow, changing nested scrollables, handling orientation/large-screen constraints, or implementing non-trivial layout; after reading, identify concrete overflow, scroll, inset, text, media, and viewport risks and turn them into implementation constraints or validation checks.
+- Read `references/responsive-layout.md` when the task involves responsive/adaptive layout, overflow, Figma or screenshot implementation, fixed design canvas adaptation, layout review/refactor, breakpoints, `MediaQuery`, `LayoutBuilder`, text scale, localization, keyboard, safe areas, or compact/medium/wide behavior.
+- Read `references/layout-patterns.md` when creating a new screen, translating a design, making a structural layout change, or choosing the primary surface pattern, scroll owner, constraint model, and adaptive strategy.
+- Read `references/layout-pitfalls.md` when reviewing generated UI, fixing overflow, changing nested scrollables, handling orientation/large-screen constraints, or implementing non-trivial layout.
+- Read `references/preview-workflow.md` when the task involves `LAYOUT-PREVIEW.md`, `main_preview.dart`, app-style Web preview, mock data, Dart raw JSON responses, SDK/service bypasses, or ready-check evidence.
+
+For broad UI work, load the responsive, pattern, and pitfall references together. For a narrow review or overflow-only task, load the responsive reference first and add pitfalls if the code shows scroll, inset, text, media, or viewport risk.
+
+## UI Delivery Workflow
+
+For new UI, screenshot/Figma restoration, layout refactor, or app-style preview work:
+
+1. Understand the screenshot, Figma/CSS, product description, existing page, or target route.
+2. Complete the layout brief and classify the surface before choosing widgets.
+3. Choose the primary pattern and scroll owner; introduce breakpoints only for real structure changes.
+4. Translate fixed design sizes into aspect ratios, min/max constraints, padding, natural height, and scroll behavior.
+5. Implement with local constraints at the component boundary; do not scatter global screen-width guesses through leaves.
+6. If this is a real app page or flow, create, update, or skip `LAYOUT-PREVIEW.md` according to the trigger tiers.
+7. Validate with allowed static checks, targeted tests, and project-approved preview evidence.
 
 ## LAYOUT-PREVIEW.md Trigger Tiers
 
@@ -123,80 +74,14 @@ For new UI, screenshot/Figma restoration, or app-style preview work, treat the t
 - Optional update: existing preview docs where a local UI change affects ready facts, fixture data, viewport evidence, or a medium-risk layout branch.
 - Skip: tiny copy, color, spacing, icon, format, or local overflow fixes that do not change route, mock data, state reachability, scroll ownership, or responsive behavior.
 
-## Pattern Selection
-
-For broad UI work, use the reference routing above to load patterns and pitfalls together. For a narrow review or overflow-only task, load pitfalls first and add patterns only if the structure needs to change.
-
-Do not default to `600px => Row/Column`. Add breakpoints only when the information architecture changes at that size. Prefer continuous constraints, slivers, max widths, grids with max extents, and aspect ratios when they express the design better than discrete branching.
-
-## Responsive and Adaptive Layout
-
-Treat responsive layout as part of the layout brief, not as a separate cookbook step. First decide what wider or taller space should do for the user task: add a useful pane, reveal filters or navigation, increase grid density, preserve readable width, or keep the same structure.
-
-When adaptive behavior is needed:
-
-- Use `MediaQuery.sizeOf(context)` for whole-window facts and `MediaQuery.paddingOf` or `viewInsetsOf` for safe-area and keyboard facts.
-- Use `LayoutBuilder` only at the boundary where parent constraints decide structure.
-- Name breakpoints after the structural change they enable, such as `detailPaneMinWidth`, not generic values such as `largeScreenMinWidth`.
-- Introduce a breakpoint only when the layout's information architecture changes. Do not use `600` as a default.
-- Prefer `ConstrainedBox` plus `Center` for readable text and forms on wide screens.
-- Prefer `SliverGridDelegateWithMaxCrossAxisExtent` when a grid should add columns while tiles keep a useful width.
-- Use `Expanded` and `Flexible` after deciding which region owns remaining space.
-- Avoid hardware-type checks and orientation-driven branching as layout truth. Base layout decisions on available constraints.
-- If the product forces orientation lock, do not assume `MediaQuery` reports the physical display or all usable large-screen space. Treat it as a platform compatibility case and read `layout-pitfalls.md` before giving sizing guidance.
-
-## Implementation Guidance
-
-- Use `LayoutBuilder` at the boundary where parent constraints matter; avoid scattering width checks through leaf widgets.
-- Use `MediaQuery.sizeOf`, `paddingOf`, and `viewInsetsOf` for window, safe-area, and keyboard facts when those facts are actually needed.
-- Prefer `CustomScrollView` and slivers for pages that mix headers, lists, grids, and pinned/flexible regions.
-- Use `Expanded` and `Flexible` only after deciding how remaining space should be distributed.
-- Use `ConstrainedBox`, `FractionallySizedBox`, `AspectRatio`, `SizedBox`, and `Align` to make fragile dimensions explicit.
-- Keep readable text and forms constrained on wide screens; do not let content stretch just because the window is wide.
-- Keep media dimensions stable with aspect ratios and fit rules; do not allow images or videos to drive unpredictable page height.
-- Keep primary actions reachable without covering content. For forms, account for keyboard and validation errors before finalizing the scroll model.
-- Extract small private widgets when a branch or section has its own layout responsibility. Avoid creating abstractions that only rename a `Column`.
-
-## App-Style Preview Guidance
-
-- Prefer real routes, real app shell, real theme, real repository/use-case, and real DTO/parser paths.
-- Use a separate `main_preview.dart` when the project supports preview entrypoints. It should inject mock API transport, the narrowest external data-source adapter mocks, and explicit SDK/service bypasses without owning page logic or alternate route maps.
-- Keep mock API data simple. A Dart mock API table that maps endpoint/request entries to raw JSON response providers is enough until real backend interfaces require more.
-- Let raw JSON responses pass through real decode, envelope parsing, DTO parsing, repository code, and page state. Do not jump straight to view models or widget data for convenience.
-- Allow hand-written fake responses when they match backend code, interface facts, or parser requirements.
-- Do not package JSON fixture files as the default daily UI preview path. Captured JSON may be kept as reference evidence, but Dart raw JSON strings or response providers are the hot-reload-friendly default.
-- Missing mock APIs must fail locally with method/path/query/body diagnostics. Do not silently call the real network.
-- Do not bind the workflow only to HTTP. For pages driven by local DB/cache, SDK streams, local state sources, or other non-API data, mock at the smallest external boundary that still exercises the real decode/adapter/page path.
-- Use SDK/service bypasses only for non-API capabilities such as payment, push, media picker, permissions, native SDKs, and system services. Record them in `LAYOUT-PREVIEW.md`.
-- Apply the web-server lifecycle rule before starting app-style preview. One
-  project should not accumulate multiple hidden preview servers across ports.
-
-## Pitfall Check
-
-Apply `references/layout-pitfalls.md` according to the routing contract above. Skip it only for tiny text/style edits that cannot affect constraints, scrolling, insets, or content size.
-
-Actively avoid:
-
-- `SingleChildScrollView` wrapping a large `Column` that contains lazy lists.
-- `ListView` or `GridView` inside another scroll view with casual `shrinkWrap: true`.
-- Hard-coded heights copied from a design when content can grow.
-- Device-type or orientation checks used as layout truth.
-- Wide-screen pages that simply center a narrow phone layout when a richer structure is needed.
-- Wide-screen pages that stretch reading/form content beyond useful width.
-- `Stack` overlays that hide scrollable content, keyboard content, or accessibility focus.
-- Text without max lines, wrapping, or overflow decisions in constrained UI.
-- Placeholder/demo widgets in production UI unless the task is explicitly prototyping.
-
 ## Validation
 
 Before finishing:
 
 - Run allowed static checks unless project instructions, user constraints, or missing dependencies explicitly defer them.
-- Inspect the changed code for overflow-prone combinations listed in `layout-pitfalls.md`.
-- Verify the layout path for compact, medium, and wide constraints in code reasoning or screenshots if available.
-- Verify loading, empty, error, long text, and keyboard/inset behavior when they are relevant.
+- Inspect the changed code against `references/responsive-layout.md` and `references/layout-pitfalls.md`.
+- Verify compact, medium, and wide behavior by code reasoning, widget tests, or screenshots when available.
+- Verify loading, empty, error, long text, localization, text scale, keyboard, and inset behavior when relevant.
 - For app-style preview, verify `LAYOUT-PREVIEW.md` identifies the route, mock data boundary, bypasses, fixture version, expected data IDs, auth/session source, cache isolation or cleanup, expected mock hit count, viewports, and evidence. Confirm ready check is not just "page is nonblank."
-- If a web-server preview was used, verify same-project preview reuse/start/stop
-  records, ownership-scoped cleanup, and stale-preview checks before the final
-  report.
-- State any runtime or device validation that remains deferred to the user.
+- If a web-server preview was used, report preview reuse/start/stop/remaining-process evidence from `references/preview-workflow.md`.
+- State any real-device, simulator, build, backend, native SDK, or payment validation that remains deferred to the user.

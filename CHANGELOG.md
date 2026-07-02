@@ -19,5 +19,5 @@ All notable changes to this repository will be documented in this file.
 
 ### Changed
 
-- Expanded `flutter-best-layout` to cover responsive/adaptive layout decisions, constraint reasoning, breakpoint policy, screen/window sizing, and orientation-sensitive layout review.
-- Moved reusable responsive layout guidance into `flutter-best-layout` references, including `MediaQuery.sizeOf`, `LayoutBuilder` boundaries, `ConstrainedBox`, grid max extents, and rules against default `600px` breakpoints.
+- Expanded `flutter-best-layout` to cover responsive/adaptive layout decisions, constraint reasoning, breakpoint policy, fixed design canvas adaptation, screen/window sizing, and orientation-sensitive layout review.
+- Added `flutter-best-layout/references/responsive-layout.md` for reusable layout judgment, including `MediaQuery.sizeOf`, `paddingOf`, `viewInsetsOf`, `LayoutBuilder` boundaries, surface classification, anti-patterns, review/refactor checklists, and rules against magic `600px`/`840px` breakpoints.

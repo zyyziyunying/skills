@@ -11,6 +11,14 @@ Start from the user task, content hierarchy, and parent constraints before choos
 
 Do not treat Flutter UI work as a reflexive `Column`, `Row`, `LayoutBuilder`, breakpoint, fixed Figma pixel, or fake-repository exercise. First derive the layout and preview contract, then choose the smallest widget and preview structure that satisfies it.
 
+## Goal Gate
+
+Before loading optional project docs or reference files, identify a concrete layout target: a file, page, route, component, screenshot/Figma node, overflow symptom, viewport, or user workflow.
+
+If no concrete target exists, read only the required skill and project instructions needed to ask a safe question, then ask for the target or audit scope. Do not load layout references, architecture docs, owner READMEs, preview docs, or broad code context just because the task is layout-related.
+
+Treat requests such as "check the whole app", "audit all layout", or "look over the UI" as broad audits, not as concrete targets. For broad audits or multi-page work, propose the first bounded evidence slice and ask for scope or budget confirmation before reading large optional docs, architecture docs, many owner READMEs, or broad code context.
+
 ## Required Context
 
 Before implementing or reviewing layout in an existing repo:
@@ -20,6 +28,7 @@ Before implementing or reviewing layout in an existing repo:
 - Prefer existing app widgets, design-system helpers, and local layout utilities over introducing new patterns.
 - If a module has an owner README, `SPEC.md`, design doc, or goal source of truth for UI behavior, read it before changing durable behavior.
 - Keep `DESIGN.md` for UI rules, visual standards, and design facts. Use `LAYOUT-PREVIEW.md` for route, mock data boundary, bypass, ready, viewport, and preview evidence instructions when app-style preview is relevant.
+- Treat project scope tables as routing guides, not a command to read every listed document. Prefer nearest owner docs and target-adjacent code over full architecture docs unless the task spans structure, routing, ownership, app shell boundaries, or no nearer owner can be found.
 - If translating from Figma/CSS, treat fixed pixels as design intent, not literal Flutter constraints.
 
 ## Command Boundary
@@ -49,12 +58,13 @@ Keep the brief internal for narrow changes. Share a concise plan when the work i
 
 ## Reference Routing
 
+- Load references progressively. Start with the one reference that matches the target and add more only when the artifact or risk requires it.
 - Read `references/responsive-layout.md` when the task involves responsive/adaptive layout, overflow, Figma or screenshot implementation, fixed design canvas adaptation, layout review/refactor, breakpoints, `MediaQuery`, `LayoutBuilder`, text scale, localization, keyboard, safe areas, or compact/medium/wide behavior.
 - Read `references/layout-patterns.md` when creating a new screen, translating a design, making a structural layout change, or choosing the primary surface pattern, scroll owner, constraint model, and adaptive strategy.
-- Read `references/layout-pitfalls.md` when reviewing generated UI, fixing overflow, changing nested scrollables, handling orientation/large-screen constraints, or implementing non-trivial layout.
+- Read `references/layout-pitfalls.md` when code or design evidence shows nested scrollables, unbounded constraints, hard-coded height/width risk, orientation/large-screen risk, keyboard/inset/safe-area risk, text/localization risk, media aspect-ratio risk, Stack/overlay collision risk, or when a non-trivial layout needs final risk review.
 - Read `references/preview-workflow.md` when the task involves `LAYOUT-PREVIEW.md`, `main_preview.dart`, app-style Web preview, mock data, Dart raw JSON responses, SDK/service bypasses, or ready-check evidence.
 
-For broad UI work, load the responsive, pattern, and pitfall references together. For a narrow review or overflow-only task, load the responsive reference first and add pitfalls if the code shows scroll, inset, text, media, or viewport risk.
+Do not load responsive, pattern, and pitfall references together just because the task is broad. If broad UI work has no concrete target, stop at the Goal Gate. If it has a concrete target, read the first matching reference, inspect the target, then decide whether another reference is justified.
 
 ## UI Delivery Workflow
 
@@ -80,11 +90,12 @@ For new UI, screenshot/Figma restoration, layout refactor, or app-style preview 
 Before finishing:
 
 - Run allowed static checks unless project instructions, user constraints, or missing dependencies explicitly defer them.
-- Inspect the changed code against `references/responsive-layout.md` and `references/layout-pitfalls.md`.
-- Apply the default layout gate in `references/responsive-layout.md`; for screenshot/Figma UI with CTA, price, legal, forms, or purchase panels, smoke tests that only prove text exists are not layout validation.
+- Apply this core layout gate before deciding whether more reference reading is needed: one scroll owner per axis, bounded parent constraints, no fragile fixed dimensions, compact/medium/wide behavior considered, text scale/localization considered, keyboard/insets/safe areas considered, loading/empty/error states considered, and interactive affordances backed by real semantics or explicitly disclosed as prototype shortcuts.
+- Inspect the changed code against `references/responsive-layout.md` or `references/layout-pitfalls.md` only when those references were loaded for the task or when the core layout gate exposes unresolved risk.
+- For screenshot/Figma UI with CTA, price, legal, forms, or purchase panels, smoke tests that only prove text exists are not layout validation.
 - Verify compact, medium, and wide behavior by code reasoning, widget tests, or screenshots when available.
 - Verify loading, empty, error, long text, localization, text scale, narrow width, short height, keyboard, semantics, and inset behavior when relevant.
-- For app-style preview, verify `LAYOUT-PREVIEW.md` identifies the route, mock data boundary, bypasses, fixture version, expected data IDs, auth/session source, cache isolation or cleanup, expected mock hit count, viewports, and evidence. Confirm ready check is not just "page is nonblank."
-- If a web-server preview was used, report preview reuse/start/stop/remaining-process evidence from `references/preview-workflow.md`.
+- For app-style preview, follow `references/preview-workflow.md` and confirm the ready check is not just "page is nonblank."
+- If a web-server preview was used, report preview reuse/start/stop/remaining-process evidence required by `references/preview-workflow.md`.
 - If visual fidelity required prototype shortcuts such as screenshot UI used as background, fake status bars, empty callbacks, hard-coded purchase data, or non-interactive visual links, report them explicitly instead of presenting the UI as production-complete.
 - State any real-device, simulator, build, backend, native SDK, or payment validation that remains deferred to the user.

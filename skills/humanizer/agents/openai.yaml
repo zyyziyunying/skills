@@ -1,0 +1,6 @@
+interface:
+  display_name: "Humanizer"
+  short_description: "Manual English prose humanizer"
+  default_prompt: "Use $humanizer to rewrite this English text so it sounds natural and less AI-generated."
+policy:
+  allow_implicit_invocation: false

@@ -7,6 +7,7 @@ All notable changes to this repository will be documented in this file.
 ### Added
 
 - Added `flutter-app-size` for Flutter release artifact measurement, DevTools App Size Tool analysis, size diff evidence, split debug info, obfuscation, asset/package reduction, and iOS App Thinning guidance.
+- Added `humanizer` as a manual-only English prose skill for removing common AI-writing tells while preserving meaning and voice.
 
 ### Breaking Changes
 

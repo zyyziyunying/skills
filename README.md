@@ -56,6 +56,7 @@ npx skills add zyyziyunying/skills --all
 | `flutter-release-packager` | Guide Flutter release packaging with preflight checks and artifact evidence. |
 | `git-commit-helper` | Plan and create intentional atomic git commits. |
 | `goal-first-development` | Manual-only goal-first workflow driven by `goal.html`. |
+| `humanizer` | Manual-only English prose humanizer for removing AI-writing tells. |
 | `independent-review-subagent` | Manual-only independent no-context review subagent workflow. |
 | `local-image-to-webp` | Convert local images to WebP while preserving originals. |
 | `manage-goal-docs` | Create and maintain goal folders with a single `goal.html` truth source. |

@@ -49,6 +49,7 @@ npx skills add zyyziyunying/skills --all
 | `dart-use-pattern-matching` | Apply Dart switch expressions and pattern matching where appropriate. |
 | `expert-agent-team` | Manual-only orchestration for complex multi-agent tasks. |
 | `flutter-add-widget-test` | Add Flutter widget tests for rendering and interactions. |
+| `flutter-app-size` | Measure, analyze, and reduce Flutter release artifact size. |
 | `flutter-best-layout` | Flutter layout planning, review, preview, implementation, and responsive/adaptive UI guidance. |
 | `flutter-implement-json-serialization` | Implement App API DTO and JSON mapping work in the BesideYou Flutter app. |
 | `flutter-project-harness` | Create or refresh Flutter project fact-source docs and AGENTS reading paths. |

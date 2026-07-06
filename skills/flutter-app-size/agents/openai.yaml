@@ -1,0 +1,7 @@
+interface:
+  display_name: "Flutter App Size"
+  short_description: "Flutter app size analysis and reduction"
+  default_prompt: "Use $flutter-app-size to measure and reduce a Flutter app's release artifact size."
+
+policy:
+  allow_implicit_invocation: true

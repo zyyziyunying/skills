@@ -4,6 +4,10 @@ All notable changes to this repository will be documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Added `flutter-app-size` for Flutter release artifact measurement, DevTools App Size Tool analysis, size diff evidence, split debug info, obfuscation, asset/package reduction, and iOS App Thinning guidance.
+
 ### Breaking Changes
 
 - Removed `flutter-build-responsive-layout` as an independent skill.

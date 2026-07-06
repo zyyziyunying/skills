@@ -11,6 +11,11 @@ All notable changes to this repository will be documented in this file.
 
 ### Breaking Changes
 
+- Removed `dart-use-pattern-matching` as an independent skill.
+  - Affected behavior: `skills/dart-use-pattern-matching` is no longer an installable skill path, and `$dart-use-pattern-matching` is no longer a valid explicit skill invocation.
+  - Affected callers: user prompts, local discovery links, docs, scripts, or install commands that reference `dart-use-pattern-matching`.
+  - Migration: rely on normal Dart refactoring judgment for switch expressions and patterns, or fold project-specific pattern-matching guidance into the task-specific Dart/Flutter skill that actually needs it.
+  - Validation/docs: README no longer lists `dart-use-pattern-matching`. Refresh local discovery links with `./scripts/link-local-skills.sh` if this skill had been linked locally.
 - Removed `flutter-build-responsive-layout` as an independent skill.
   - Affected behavior: `skills/flutter-build-responsive-layout` is no longer an installable skill path, `$flutter-build-responsive-layout` is no longer a valid explicit skill invocation, and Flutter responsive/adaptive layout tasks now resolve through `flutter-best-layout`.
   - Affected callers: user prompts, local discovery links, scripts, docs, or install commands that reference `flutter-build-responsive-layout`.

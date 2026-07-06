@@ -46,7 +46,6 @@ npx skills add zyyziyunying/skills --all
 | Skill | Purpose |
 | --- | --- |
 | `dart-add-unit-test` | Add focused Dart unit tests with `package:test`. |
-| `dart-use-pattern-matching` | Apply Dart switch expressions and pattern matching where appropriate. |
 | `expert-agent-team` | Manual-only orchestration for complex multi-agent tasks. |
 | `flutter-add-widget-test` | Add Flutter widget tests for rendering and interactions. |
 | `flutter-app-size` | Measure, analyze, and reduce Flutter release artifact size. |

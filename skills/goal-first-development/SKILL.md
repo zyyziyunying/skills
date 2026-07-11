@@ -1,6 +1,6 @@
 ---
 name: goal-first-development
-description: "Use only when the user explicitly invokes $goal-first-development. Start or continue a goal-first workflow, delegate goal document path, naming, creation, and maintenance to $manage-goal-docs, require a complete-enough ./goals/.../goal.html before implementation, execute narrowly from that truth source, validate under active project rules, and write final evidence back."
+description: "Use only when the user explicitly invokes $goal-first-development. Serve as the canonical goal-driven delivery entry: create or select the single goal.html truth source, classify validation risk, freeze the behavior contract, route bug review, expert-agent execution, independent testing, and independent review when required, and close the goal only with decisive evidence."
 ---
 
 # Goal First Development
@@ -8,9 +8,10 @@ description: "Use only when the user explicitly invokes $goal-first-development.
 ## Purpose
 
 Use this skill only when the user explicitly invokes `$goal-first-development`.
-It is the front door for goal-driven implementation: clarify the real outcome,
-ensure there is one current `goal.html`, make that document complete enough to
-drive execution, then implement and validate from it.
+It is the canonical front door for goal-driven delivery: clarify the real
+outcome, ensure there is one current `goal.html`, make that document complete
+enough to drive execution, classify verification risk, orchestrate useful
+components, and close the goal only with decisive evidence.
 
 Do not use this skill merely because the user asks about goals, asks for a
 read-only explanation, reviews this skill, or mentions goal flow in ordinary
@@ -32,6 +33,13 @@ modify project files.
   `check.html`, `plan.html`, or `problem.html` by default.
 - If an active project rule conflicts with this workflow, follow the project
   rule and briefly state how it changes the goal-first flow.
+- This skill owns the goal lifecycle and final status. Delegated workflows and
+  subagents return implementation or verification evidence; they do not redefine
+  the goal or mark it done.
+- `$expert-agent-team`, `$independent-test-verifier`,
+  `$independent-review-subagent`, and `$review-bug-value` may be loaded when
+  their current contracts allow delegation from this explicitly activated
+  owner workflow. Announce each internal skill use and why it is required.
 
 ## Flow Selection
 
@@ -69,7 +77,16 @@ content for:
 - Research summary: confirmed facts, constraints, unknowns, and evidence.
 - Design decision: chosen approach, boundaries, tradeoffs, and rejected options
   when they matter.
-- Check criteria: observable acceptance criteria and the validation method.
+- Check criteria: observable acceptance criteria, validation method, and a
+  completion gate clearly labeled as pending until its evidence exists.
+- Validation risk: `L1`, `L2`, or `L3`, with a short justification.
+- Correctness sources: the authoritative fact source, contract, rule, or user
+  confirmation that defines expected behavior. The implementation itself is
+  not a correctness source.
+- Validation separation: developer checks and independent checks, including
+  negative cases, boundaries, invariants, and required runtime evidence.
+- For bug fixes: observed behavior, expected behavior, source of truth, and the
+  intended pre-fix failure signal.
 - Plan: execution steps derived from the design and check criteria.
 - Problem record: current blockers, open risks, or an explicit "none".
 - Supporting material links when raw evidence exists outside `goal.html`.
@@ -111,7 +128,21 @@ If the document is incomplete:
    - Put current research, design, check, plan, and problem conclusions in
      `goal.html`, not in separate phase documents.
 
-4. Confirm the concise development contract.
+4. Classify validation risk.
+   - `L1`: mechanical or presentation-only work with no meaningful behavior,
+     data, security, compatibility, or runtime risk. Developer checks plus the
+     existing deterministic suite are normally sufficient.
+   - `L2`: ordinary behavior changes, state decisions, serialization, UI
+     interactions, API boundaries, refactors with semantic risk, and confirmed
+     bug fixes. Require an independent test charter, independent verification,
+     and final independent review.
+   - `L3`: payment, permissions, privacy, security, account state, destructive
+     operations, data migration, release/store paths, or high-blast-radius
+     behavior. Require user-approved correctness sources, independent testing,
+     independent review, and the applicable device/E2E/manual evidence.
+   - Record the level and justification in `goal.html` before implementation.
+
+5. Confirm the concise development contract.
    - Derive the contract from `goal.html`: goal, constraints, non-goals,
      approach, check criteria, validation method, and open problems.
    - Treat explicit approval such as "确认", "可以", "按这个做", or "go ahead"
@@ -122,23 +153,47 @@ If the document is incomplete:
      architecture, data semantics, or docs authority and approval is unclear,
      ask one direct confirmation question.
 
-5. Activate the goal before implementation.
+6. Activate and freeze the behavior contract before implementation.
    - After the contract is confirmed, update `goal.html` from `draft` to
      `active` before changing implementation files.
    - Do not implement directly from a `done` or `superseded` goal unless the
      user explicitly asks to reopen it or create a follow-up goal.
    - If the selected goal is `blocked`, confirm the blocker is resolved or
      record the new condition before continuing.
+   - Once active, treat the one-sentence goal, non-goals, externally observable
+     behavior, correctness sources, and Check criteria as a frozen semantic
+     contract.
+   - An implementation agent may propose a semantic change but must not lower,
+     delete, or reinterpret acceptance criteria. Update `goal.html` and obtain
+     renewed approval before continuing when behavior, scope, data semantics,
+     architecture, or required validation changes materially.
 
-6. Build toward the goal.
+7. Establish independent validation before implementation when required.
+   - For bug claims, apply `$review-bug-value` before implementation when the
+     expected behavior or value has not already been established in the goal.
+   - For L2/L3, use `$independent-test-verifier` in Test Design mode before
+     development. Give it the goal and neutral fact sources, not the parent
+     analysis or preferred solution.
+   - In a shared working tree, finish independent test design before changing
+     implementation files unless the verifier has an isolated baseline.
+   - Record the resulting charter in the Check section without creating a
+     second active truth source.
+
+8. Build toward the goal.
    - Implement the smallest change that satisfies the confirmed `goal.html`
      contract.
    - Preserve existing user changes and local patterns.
    - Avoid unrelated refactors.
    - If the best implementation differs from the goal document, update
-     `goal.html` first and explain the material decision.
+     non-semantic Design or Plan details first and explain the decision. Route
+     semantic changes through the renewed-approval rule above.
+   - For complex or bounded parallel work, delegate execution to
+     `$expert-agent-team`. The team must treat the active goal as its immutable
+     behavior contract and return evidence to this owner workflow.
+   - Allow developer agents to write focused developer tests. Do not treat
+     those tests as the sole acceptance evidence for L2/L3 work.
 
-7. Validate through active project rules.
+9. Validate through active project rules.
    - Choose the strongest practical check allowed by current instructions.
    - Respect project policies that forbid builds, device runs, simulators, or
      broad analysis commands.
@@ -148,12 +203,35 @@ If the document is incomplete:
      risk instead of marking it blocked.
    - Mark the goal blocked only when no meaningful next step can proceed until
      an external condition is resolved.
+   - For L2/L3, use `$independent-test-verifier` in Test Verification mode and
+     then refresh `goal.html` with current implementation facts, actual test
+     evidence, remaining risks, and an explicitly pending final-review gate.
+     Use `$independent-review-subagent` for a final read-only review of the
+     implementation, tests, and current goal evidence. The verifier may own
+     test-only paths but must not edit product code.
+   - Do not silently dismiss an independent blocker. Resolve it with evidence,
+     record a specification conflict, or keep the goal active/blocked as
+     appropriate.
+   - If final review findings require changes to any reviewed artifact, make the
+     scoped correction and run a fresh no-context re-review before closure.
 
-8. Update `goal.html` after validation.
+10. Update `goal.html` after validation.
    - Record only material decisions, final validation evidence, current status,
      and unresolved problems.
    - Do not turn `goal.html` into an execution log.
    - Do not mark the goal done without decisive validation.
+   - Before evidence exists, describe required results as a pending completion
+     gate, not as an achieved outcome. After validation, replace or supplement
+     the gate with exact commands, results, independent conclusions, and known
+     limitations.
+   - `L1` decisive validation requires the declared developer/deterministic
+     checks. `L2` additionally requires the independent test charter, completed
+     independent test verification, and passing final independent review. `L3`
+     additionally requires all user-approved runtime, device, E2E, security, or
+     manual evidence declared in Check.
+   - For a bug fix, record whether fail-before-fix/pass-after-fix was proved. If
+     safe baseline proof was unavailable, record that limitation instead of
+     implying it was demonstrated.
    - If user-side validation is still required, keep the goal active and record
      the pending validation or remaining risk.
    - If a concrete blocker prevents further progress, mark it blocked and state
@@ -169,6 +247,7 @@ Before implementation, respond with:
 - approval status, including whether design or architecture approval is already
   satisfied
 - first validation target or first test target
+- validation risk and required independent gates
 
 After implementation, respond with:
 
@@ -176,6 +255,7 @@ After implementation, respond with:
 - changed files
 - `goal.html` sections updated
 - validation performed
+- independent verification and review evidence
 - remaining risk or blocker, if any
 
 Keep responses direct and evidence-based.

@@ -12,11 +12,11 @@ This document owns packaging, signing, artifact, publishing, and deployment rule
 
 ## Package Identity
 
-[List Android application id, namespace, iOS bundle id, package name, plugin coordinates, or package publishing identity.]
+[List package, application, service, image, extension, plugin, store, or registry identity.]
 
 ## Artifact Types
 
-[List expected APK, AAB, IPA, web build, package archive, symbols, manifests, or release notes.]
+[List expected binaries, bundles, images, archives, packages, symbols, manifests, checksums, or release notes.]
 
 ## Signing or Publishing
 
@@ -24,7 +24,7 @@ This document owns packaging, signing, artifact, publishing, and deployment rule
 
 ## Versioning
 
-[Describe pubspec version, build number, version code/name, package version, or CI version rules.]
+[Describe source version, build number, artifact version, compatibility, tag, or CI version rules.]
 
 ## Artifact Naming
 
@@ -36,4 +36,4 @@ This document owns packaging, signing, artifact, publishing, and deployment rule
 
 ## Release Agent Contract
 
-[If AI-assisted packaging is allowed, link the project-owned contract, usually `tool/release_console/agent-contract.json`. State that `PACKAGING.md` is the human-readable source of truth and the contract is the machine-readable execution surface.]
+[If agent-assisted packaging is allowed, link the project-owned machine-readable contract or script interface. State which human-readable source owns policy and which execution surface enforces it.]

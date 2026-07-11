@@ -1,19 +1,29 @@
 ---
 name: independent-review-subagent
-description: "Use only when the user explicitly invokes $independent-review-subagent. Opens a no-context-fork subagent for a bounded independent review/check/audit; defaults to reliably isolated current-session changes when no target is supplied, otherwise asks for scope confirmation."
+description: "Open a no-context-fork subagent for a bounded read-only independent review, check, or audit. Use when the user explicitly invokes $independent-review-subagent, or when an explicitly activated owner workflow such as $goal-first-development delegates the final independent review required by its confirmed validation contract."
 ---
 
 # Independent Review Subagent
 
 ## Purpose
 
-Use this skill only when the user explicitly invokes `$independent-review-subagent`. It delegates a bounded read-only review/check/audit to a subagent while preserving independence. The default posture is: no context fork, minimal prompt, bounded scope, no parent conclusions, and no file edits.
+Use this skill when explicitly invoked or delegated by an explicitly activated
+owner workflow. It delegates a bounded read-only review/check/audit to a
+subagent while preserving independence. The default posture is: no context
+fork, minimal prompt, bounded scope, no parent conclusions, and no file edits.
 
 ## Trigger Contract
 
-Require explicit invocation with `$independent-review-subagent`.
+Allow activation through either:
 
-If the user asks for an "independent review" or similar wording without writing `$independent-review-subagent`, do not activate this skill. Treat the request as an ordinary review unless another active instruction applies.
+1. Explicit invocation with `$independent-review-subagent`.
+2. Internal delegation from an explicitly activated owner workflow when its
+   confirmed validation contract requires a final independent review.
+
+If the user asks for an "independent review" or similar wording without writing
+`$independent-review-subagent` and no owner workflow delegated it, do not
+activate this skill. Treat the request as an ordinary review unless another
+active instruction applies.
 
 ## Workflow
 
@@ -28,11 +38,17 @@ If the user asks for an "independent review" or similar wording without writing 
    - Do not silently review the whole working tree unless it is the confirmed or clearly current-session scope.
 
 2. Spawn the subagent.
-   - Use `fork_context: false`.
-   - Use an `explorer` subagent for read-only review/check/audit.
+   - Use the current runtime's no-context-fork mechanism. In Codex runtimes that
+     expose `fork_turns`, use `fork_turns: "none"`; in runtimes that expose
+     `fork_context`, use `fork_context: false`.
+   - Use a read-only/explorer subagent when the runtime exposes agent roles;
+     otherwise enforce read-only behavior in the sparse prompt.
    - Do not override the model unless the user explicitly asks for a model or there is a clear task-specific reason.
    - If the user asks the subagent to edit files, this skill no longer applies as a read-only review flow; use a worker-style delegation with explicit write ownership instead.
-   - Treat no-context-fork explorer support as a hard precondition. If the runtime cannot spawn an explorer subagent, cannot set `fork_context: false`, or the spawn fails, stop and state that an independent subagent review is unavailable.
+   - Treat no-context-fork subagent support as a hard precondition. If the
+     runtime cannot spawn a subagent without inherited conversation context, or
+     the spawn fails, stop and state that an independent subagent review is
+     unavailable.
    - Do not simulate independence in the main thread. Continue only if the user accepts an ordinary non-independent review, and label it as non-independent.
 
 3. Keep the prompt sparse.
@@ -59,7 +75,8 @@ For English-language tasks, use the same shape in English.
 5. Handle the result.
    - Wait for the subagent when the user expects the review result in the current turn.
    - Relay the findings faithfully, preserving severity, evidence, and uncertainty. Prefer verbatim or structure-equivalent transfer over lossy summaries.
-   - Close the subagent after it completes unless there is a clear reason to keep it open.
+   - Close the subagent after it completes when the runtime provides a close
+     operation. Otherwise leave no pending follow-up work and report completion.
    - Do not silently treat subagent findings as ground truth when they conflict with higher-priority project rules or direct evidence; state the conflict and resolve it in a separately labeled main-thread review or decision.
 
 ## Response Shape

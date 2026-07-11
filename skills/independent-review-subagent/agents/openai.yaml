@@ -1,6 +1,6 @@
 interface:
   display_name: "Independent Review Subagent"
-  short_description: "Run no-context-fork review subagents"
+  short_description: "Run bounded no-context independent reviews"
   default_prompt: "Use $independent-review-subagent to independently review this session's reliably isolated changes; ask me to confirm the target if they cannot be isolated."
 policy:
   allow_implicit_invocation: false

@@ -94,6 +94,12 @@ English, lowercase, kebab-case summary of the goal outcome:
    - Keep generated and manual CSS out of `goal.html` for new documents. Link a
      stylesheet instead so agents can read the fact source without spending
      context on presentation.
+   - Keep planned completion gates distinct from achieved validation evidence.
+     Before a check runs, label its required outcome as pending. Never write a
+     future independent review or test result as though it already happened.
+   - After implementation changes current behavior, distinguish the pre-change
+     baseline from the current implementation conclusion and refresh broken or
+     stale evidence links before final review.
 
 4. Treat the workflow phases as sections of `goal.html`.
    - `research`: facts, constraints, unknowns, and evidence.
@@ -103,6 +109,10 @@ English, lowercase, kebab-case summary of the goal outcome:
    - `plan`: execution steps derived from the design and check criteria.
    - `problem`: issues discovered at any point; this is a cross-cutting record,
      not a final linear phase.
+   - In `check`, keep correctness sources and validation separation explicit:
+     observable behavior, authoritative oracle, validation risk, developer
+     checks, independent checks, required runtime evidence, and the decisive
+     completion evidence. For bug work, include the intended pre-fix failure.
 
 5. Close the goal.
    - Mark the status as done, blocked, or superseded.
@@ -119,10 +129,15 @@ Keep `goal.html` readable as a standalone current-state page. It should include:
 - research summary
 - design decision
 - check criteria
+- validation risk (`L1`, `L2`, or `L3`) and a short justification when the
+  active workflow uses risk-based validation
+- correctness sources and separate developer/independent validation expectations
 - plan
 - problem record
 - linked evidence or archive material
 - change log
+- a complete semantic page title; do not shorten the active title with an
+  ellipsis merely for display
 
 The bundled script creates a Chinese template by default. If another language
 is required, create the goal first and then edit `goal.html` directly.

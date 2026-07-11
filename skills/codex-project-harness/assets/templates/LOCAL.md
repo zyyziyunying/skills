@@ -18,24 +18,19 @@ This document owns local setup, debug, and machine-local conventions.
 
 Default allowed:
 
-- Static reading and code/doc edits.
-- `dart analyze` / `flutter analyze`.
-- Targeted `dart test` / `flutter test test/...`.
+- Static reading and project-owned code or documentation edits.
+- [Fast deterministic lint, type, schema, or targeted test commands.]
 
 Conditionally allowed when `AGENTS.md`, `TEST.md`, this document, or the
 current user request explicitly allows the exact command:
 
-- `flutter test integration_test`.
-- `flutter run -d web-server`.
-- Hot reload.
-- Screenshot or preview checks.
+- [Integration, preview, browser, simulator, container, or expensive suite.]
+- [Documented commands that start isolated local services.]
 
 Requires separate confirmation:
 
-- Real device or simulator install/run.
-- `flutter build`, release/package work, signing, or store upload.
-- Store/account/payment flows.
-- Mutable backend-state flows.
+- Release, deployment, signing, publishing, or production changes.
+- Account, payment, private-data, real-device, or mutable external-state flows.
 
 ## Debug Configuration
 

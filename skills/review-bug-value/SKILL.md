@@ -1,9 +1,24 @@
 ---
 name: review-bug-value
-description: Judge whether a reported bug, regression claim, severity/priority label, or bug-fix value claim is valid, valuable, project-aware, business-aligned, and worth fixing. Use only when the user asks for bug value review, bug triage, severity/priority validation, judging whether a bug is real or valuable, distinguishing expected behavior from defects, or evaluating whether a proposed bug fix is valid, valuable, worth accepting, and aligned with project facts, requirements, user workflows, module boundaries, and real user impact. Do not use for ordinary debugging, generic code review, routine failing-test repair, or implementation work unless the user asks to evaluate bug validity/value first.
+description: Judge whether a reported bug, regression claim, severity/priority label, or bug-fix value claim is valid, valuable, project-aware, business-aligned, and worth fixing. Use when the user asks for bug value review or triage, or when an explicitly activated owner workflow such as $goal-first-development delegates the pre-implementation value gate for a reported bug whose expected behavior or value is not yet established. Do not use for ordinary debugging, generic code review, or routine failing-test repair.
 ---
 
 # Review Bug Value
+
+## Activation Contract
+
+Use this skill through either:
+
+1. A user request for bug value review, bug triage, severity/priority
+   validation, distinguishing expected behavior from defects, or evaluating a
+   proposed fix before acceptance.
+2. Internal delegation from an explicitly activated owner workflow when a
+   reported bug or regression has not yet passed the value and source-of-truth
+   gate in its confirmed goal process.
+
+Do not activate it for ordinary debugging, generic code review, or routine
+failing-test repair when bug validity and expected behavior are already
+established.
 
 ## Core Rule
 

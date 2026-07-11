@@ -45,18 +45,19 @@ npx skills add zyyziyunying/skills --all
 
 | Skill | Purpose |
 | --- | --- |
+| `codex-project-harness` | Build agent-legible project facts, navigation, plans, constraints, and validation loops. |
 | `dart-add-unit-test` | Add focused Dart unit tests with `package:test`. |
-| `expert-agent-team` | Manual-only orchestration for complex multi-agent tasks. |
+| `expert-agent-team` | Expert-agent execution used directly or by an explicit owner workflow. |
 | `flutter-add-widget-test` | Add Flutter widget tests for rendering and interactions. |
 | `flutter-app-size` | Measure, analyze, and reduce Flutter release artifact size. |
 | `flutter-best-layout` | Flutter layout planning, review, preview, implementation, and responsive/adaptive UI guidance. |
 | `flutter-implement-json-serialization` | Implement App API DTO and JSON mapping work in the BesideYou Flutter app. |
-| `flutter-project-harness` | Create or refresh Flutter project fact-source docs and AGENTS reading paths. |
 | `flutter-release-packager` | Guide Flutter release packaging with preflight checks and artifact evidence. |
 | `git-commit-helper` | Plan and create intentional atomic git commits. |
-| `goal-first-development` | Manual-only goal-first workflow driven by `goal.html`. |
+| `goal-first-development` | Canonical goal-first delivery entry with risk-based independent validation. |
 | `humanizer` | Manual-only English prose humanizer for removing AI-writing tells. |
-| `independent-review-subagent` | Manual-only independent no-context review subagent workflow. |
+| `independent-review-subagent` | No-context independent review used directly or by an explicit owner workflow. |
+| `independent-test-verifier` | Independent test design and test-only verification from authoritative behavior sources. |
 | `local-image-to-webp` | Convert local images to WebP while preserving originals. |
 | `manage-goal-docs` | Create and maintain goal folders with a single `goal.html` truth source. |
 | `patrol-e2e` | Explicit Patrol E2E workflow for Flutter setup, execution, and evidence. |
@@ -64,6 +65,20 @@ npx skills add zyyziyunying/skills --all
 | `playwright-interactive` | Persistent Playwright browser and Electron debugging. |
 | `review-bug-value` | Review reported bug validity, value, priority, and business alignment. |
 | `screenshot` | Capture desktop or app screenshots when OS-level capture is needed. |
+
+## Recommended workflow entry
+
+Use `$goal-first-development` as the normal entry for goal-driven software
+delivery. It owns `goal.html`, validation-risk classification, the frozen
+behavior contract, component routing, evidence backfill, and final goal status.
+
+Depending on the confirmed goal, it may delegate execution or validation to
+`expert-agent-team`, `review-bug-value`, `independent-test-verifier`, and
+`independent-review-subagent`. These component skills remain directly invokable
+for bounded standalone work, but users do not need to manually sequence them for
+the normal goal-first flow. Device, release, account, payment, and mutable
+backend-state boundaries still require the explicit skill or approval declared
+by the relevant project rules.
 
 ## Maintain local discovery
 

@@ -56,10 +56,7 @@ def validate_slug(value: str) -> str:
 
 
 def derive_title(goal: str) -> str:
-    title = re.sub(r"[。！？.!?]+$", "", goal).strip()
-    if len(title) <= 28:
-        return title
-    return f"{title[:28]}..."
+    return re.sub(r"[。！？.!?]+$", "", goal).strip()
 
 
 def unique_folder(root: Path, created: str, slug: str) -> Path:
@@ -131,7 +128,12 @@ def build_html(title: str, goal: str, status: str, created: str) -> str:
     <section>
       <h2>Check 验收标准</h2>
       <ul>
-        <li>待补充：可观察的完成标准和验证方式。</li>
+        <li><strong>可观察行为：</strong>待补充外部可观察的完成标准、反例、边界和不变量。</li>
+        <li><strong>正确性来源：</strong>待补充定义预期行为的事实源、契约、规则或用户确认；不得以当前实现作为唯一依据。</li>
+        <li><strong>验证等级：</strong>待补充 L1 / L2 / L3 及理由。</li>
+        <li><strong>开发性验证：</strong>待补充开发 Agent 应执行的单元测试、静态检查或局部验证。</li>
+        <li><strong>独立验证：</strong>待补充独立测试、Review、E2E、设备或人工证据；若不需要，说明理由。</li>
+        <li><strong>完成门槛（待验证）：</strong>待补充哪些结果足以标记 done；验证完成后再记录实际证据。bug 修复还需记录预期的修复前失败信号。</li>
       </ul>
     </section>
 

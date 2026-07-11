@@ -9,6 +9,7 @@ metadata:
 
 ## Contents
 - [Structuring Test Files](#structuring-test-files)
+- [Test Authority](#test-authority)
 - [Writing Tests](#writing-tests)
 - [Executing Tests](#executing-tests)
 - [Test Implementation Workflow](#test-implementation-workflow)
@@ -20,6 +21,27 @@ Organize test files to mirror the `lib` directory structure to maintain predicta
 * Place all test code within the `test` directory at the root of the package.
 * Append `_test.dart` to the end of all test file names (e.g., `lib/src/utils.dart` should be tested in `test/src/utils_test.dart`).
 * If writing integration tests, place them in an `integration_test` directory at the root of the package.
+
+## Test Authority
+
+Derive expected behavior before writing assertions:
+
+1. Use the active goal, project fact sources, API/domain contracts, and confirmed
+   user-visible behavior as the oracle.
+2. Treat existing tests as evidence, not automatic truth. Check whether they
+   encode current product semantics or only implementation assumptions.
+3. Do not copy the current implementation output into an expected value merely
+   to make the test pass.
+4. Prefer observable results, state, errors, and boundary contracts over private
+   structure or call-count assertions. Verify interactions only when the
+   interaction itself is part of the contract.
+5. For a bug fix, make the regression test represent the confirmed pre-fix
+   failure. Demonstrate fail-before-fix/pass-after-fix when a safe isolated
+   baseline is available; otherwise report that the pre-fix proof is unverified.
+
+Developer-authored unit tests are valuable implementation feedback, but they are
+not the sole acceptance evidence when an active workflow requires independent
+verification.
 
 ## Writing Tests
 Utilize `package:test` as the standard testing library for Dart applications.
@@ -57,7 +79,10 @@ Follow this sequential workflow when implementing new test suites. Copy the chec
 - [ ] 4. Initialize shared resources or mocks using `setUp()`.
 - [ ] 5. Write `test()` cases grouped by functionality using `group()`.
 - [ ] 6. Execute the test suite using the appropriate CLI command.
-- [ ] 7. **Feedback Loop**: Run test -> Review stack trace for failures -> Fix implementation or assertions -> Re-run until passing.
+- [ ] 7. **Classify failures before editing.** Determine whether the implementation violates the confirmed contract, the assertion conflicts with an authoritative source, the contract is ambiguous, or the environment/fixture is invalid.
+- [ ] 8. Fix implementation when it violates the contract. Change assertions only when an authoritative source proves the test is wrong, and record that source in the task evidence.
+- [ ] 9. If expected behavior is ambiguous, stop and report a product/specification question. Do not guess an expected value or weaken the assertion to obtain green tests.
+- [ ] 10. Re-run the targeted suite and report both the result and any unproven pre-fix behavior.
 
 ## Examples
 

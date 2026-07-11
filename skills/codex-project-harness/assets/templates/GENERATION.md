@@ -29,27 +29,21 @@ For each generator, document:
 
 Default allowed:
 
-- Static reading and code/doc edits.
+- Static reading and project-owned code or documentation edits.
 - Generator dry-run or validation commands that do not write outside the
   project, when documented above.
-- `dart analyze` / `flutter analyze`.
-- Targeted `dart test` / `flutter test test/...`.
+- [Fast deterministic lint, schema, or targeted test commands.]
 
 Conditionally allowed when `AGENTS.md`, `TEST.md`, `LOCAL.md`, this document,
 or the current user request explicitly allows the exact command:
 
-- Documented generator commands that modify project-owned generated outputs.
-- `flutter test integration_test`.
-- `flutter run -d web-server`.
-- Hot reload.
-- Screenshot or preview checks.
+- Documented generators that modify project-owned generated outputs.
+- [Integration, preview, browser, container, or expensive validation.]
 
 Requires separate confirmation:
 
-- Real device or simulator install/run.
-- `flutter build`, release/package work, signing, or store upload.
-- Store/account/payment flows.
-- Mutable backend-state flows.
+- Release, deployment, signing, publishing, or production changes.
+- Account, payment, private-data, real-device, or mutable external-state flows.
 
 ## Change Rules
 

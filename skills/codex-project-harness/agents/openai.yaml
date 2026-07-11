@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Project Harness"
+  short_description: "Build agent-legible project governance"
+  default_prompt: "Use $codex-project-harness to create or refresh an agent-legible harness for this repository."

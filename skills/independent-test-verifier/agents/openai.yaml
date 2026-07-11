@@ -1,0 +1,6 @@
+interface:
+  display_name: "Independent Test Verifier"
+  short_description: "Design and run independent behavior tests"
+  default_prompt: "Use $independent-test-verifier to derive independent tests from the active goal and verify the implementation without editing product code."
+policy:
+  allow_implicit_invocation: false

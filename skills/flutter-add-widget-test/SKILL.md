@@ -9,6 +9,7 @@ metadata:
 
 ## Contents
 - [Setup & Configuration](#setup--configuration)
+- [Test Authority](#test-authority)
 - [Core Components](#core-components)
 - [Workflow: Implementing a Widget Test](#workflow-implementing-a-widget-test)
 - [Interaction & State Management](#interaction--state-management)
@@ -36,6 +37,23 @@ Use the Flutter command tiers for widget-test work:
     `flutter build`, release/package work, store/account/payment flows, and
     mutable backend-state flows.
 
+## Test Authority
+
+Define assertions from the active goal, project fact sources, product behavior,
+accessibility requirements, and public widget contract before inspecting the
+implementation details that happen to produce the current tree.
+
+* Prefer user-observable content, enabled/disabled state, navigation, focus,
+  semantics, and interaction outcomes over private widget structure.
+* Use exact widget types, counts, keys, or callback calls only when they are a
+  stable contract or required test seam.
+* Do not replace expected text, state, or navigation results with the widget's
+  current output merely to make a failing test pass.
+* For bug fixes, encode the confirmed pre-fix failure and demonstrate
+  fail-before-fix/pass-after-fix when a safe isolated baseline is available.
+* Treat developer-authored widget tests as implementation feedback, not the sole
+  acceptance evidence when an active workflow requires independent validation.
+
 ## Core Components
 
 Utilize the following `flutter_test` components to interact with and validate the widget tree:
@@ -57,7 +75,10 @@ Copy the following checklist to track progress when implementing a new widget te
 - [ ] **Step 6: Rebuild the tree.** Call `await tester.pump()` or `await tester.pumpAndSettle()` to process state changes.
 - [ ] **Step 7: Verify updated state.** Use `expect()` to validate the UI after the interaction.
 - [ ] **Step 8: Run and validate.** Execute `flutter test test/your_test_file_test.dart`.
-- [ ] **Step 9: Feedback Loop.** Review test output -> identify failing matchers -> adjust widget logic or test assertions -> re-run until passing.
+- [ ] **Step 9: Classify the failure.** Decide whether widget behavior violates the confirmed contract, the matcher conflicts with an authoritative source, the contract is ambiguous, or the harness/fixture is invalid.
+- [ ] **Step 10: Correct the responsible layer.** Fix widget logic when behavior is wrong. Change a matcher only when a fact source proves the test is wrong; do not weaken it merely to obtain a pass.
+- [ ] **Step 11: Escalate ambiguity.** Report a product/specification question instead of guessing expected UI behavior.
+- [ ] **Step 12: Re-run and report.** Record the targeted command, outcome, and whether pre-fix failure was actually demonstrated.
 
 ## Interaction & State Management
 

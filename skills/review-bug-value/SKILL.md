@@ -20,6 +20,32 @@ Do not activate it for ordinary debugging, generic code review, or routine
 failing-test repair when bug validity and expected behavior are already
 established.
 
+## Independent Review Boundary
+
+When an owner workflow invokes this skill, or when the calling agent has
+already diagnosed the issue or proposed a fix, delegate the value review to a
+fresh subagent by default when subagents are available.
+
+Use the runtime's no-context-fork mechanism for this delegation. In runtimes
+that expose `fork_turns`, set it to `"none"`; in runtimes that expose
+`fork_context`, set it to `false`. If the runtime cannot spawn a subagent
+without inherited conversation context, treat an independent subagent review
+as unavailable rather than claiming independence.
+
+Give the reviewer the raw report, relevant artifacts, task-local project
+context, and fact sources. Do not pass the caller's preferred verdict,
+severity, or fix rationale unless they are themselves claims that the reviewer
+must evaluate. Keep the delegated context minimal enough to preserve an
+independent judgment.
+
+A subagent that receives this delegated review must execute the skill directly
+and must not delegate it again.
+
+For direct user invocations, small self-contained claims, or environments where
+subagents are unavailable, perform the review in the current agent. State when
+the result is not an independent second pass if that limitation matters to the
+decision.
+
 ## Core Rule
 
 Treat severity labels, reviewer comments, failing tests, and user reports as claims, not conclusions.

@@ -14,6 +14,14 @@ fi
 mkdir -p "$local_root"
 mkdir -p "$codex_root"
 
+local_root_physical="$(cd -P -- "$local_root" && pwd -P)"
+codex_root_physical="$(cd -P -- "$codex_root" && pwd -P)"
+
+if [ "$local_root_physical" = "$codex_root_physical" ]; then
+  printf 'Skill roots must resolve to different directories: %s\n' "$local_root_physical" >&2
+  exit 1
+fi
+
 for link_path in "$local_root"/*; do
   [ -L "$link_path" ] || continue
   link_target="$(readlink "$link_path")"

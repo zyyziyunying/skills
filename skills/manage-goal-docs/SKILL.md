@@ -70,8 +70,13 @@ English, lowercase, kebab-case summary of the goal outcome:
      the created `goal.html` path and whether the shared CSS was created during
      this run.
 
+   - Resolve the active skill directory from the parent directory of the
+     `SKILL.md` file that activated this skill. Substitute that exact absolute
+     path for `<skill-dir>` below; do not assume `CODEX_HOME` or a particular
+     installer layout.
+
 ```bash
-/usr/bin/python3 /Users/zyyziyunying/.codex/skills/manage-goal-docs/scripts/create_goal.py \
+python3 "<skill-dir>/scripts/create_goal.py" \
   --slug subscription-global-analytics \
   "一句话目标内容"
 ```

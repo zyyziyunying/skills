@@ -14,6 +14,42 @@ All notable changes to this repository will be documented in this file.
 
 ### Breaking Changes
 
+- Hardened `flutter-release-packager` contract validation to reject malformed
+  release inputs before status or build execution.
+  - Affected API/behavior: `requiredFiles` and `requiredEnvFiles`, when present,
+    must be string arrays; `evidence.requiredForSuccess`, when present, must be
+    boolean; and `releaseConsole.startupUrlPattern` must be a valid string
+    regular expression with at least one capture group. At runtime, its first
+    group must capture a non-empty absolute `http://` or `https://` URL with a
+    network location. Invalid contracts or startup captures that were
+    previously accepted now fail before a release-console endpoint request.
+  - Affected callers: project-owned release agent contracts consumed by
+    `scripts/release_console_client.py`, especially custom contracts that used
+    string values in place of arrays or booleans, or a startup URL pattern
+    without a capture group.
+  - Migration: convert required-file fields to string arrays, convert
+    `requiredForSuccess` to a JSON boolean, capture the complete absolute
+    `http(s)` startup URL in the first regex group, and use non-capturing groups
+    for other regex structure. Relative and non-HTTP captured URLs are no longer
+    accepted. The bundled template and current BesideYou contract already
+    satisfy the stricter validation.
+  - Validation/docs: focused contract tests now cover valid defaults, malformed
+    schema shapes, wrong first-group values, and unmatched optional first
+    groups; keep project `PACKAGING.md` and contract fixtures synchronized when
+    the schema changes.
+- Changed `scripts/link-local-skills.sh` to reject local and Codex skill roots
+  that resolve to the same physical directory.
+  - Affected API/behavior: equal roots, including aliases such as `/path/x` and
+    `/path/x/.`, now exit nonzero before managed links are removed or created;
+    the previous behavior exited successfully while producing self-referential
+    links.
+  - Affected callers: local setup commands whose configured roots resolve to
+    the same physical directory, whether through defaults, one or both
+    environment overrides, path aliases, or directory symlinks.
+  - Migration: configure two distinct directories so Codex links through the
+    local agent skill root as documented in `README.md`.
+  - Validation/docs: the link-script regression test covers aliased equal roots,
+    preservation before rejection, and the healthy two-level link path.
 - Renamed and generalized `flutter-project-harness` as
   `codex-project-harness`.
   - Affected API/behavior: the install path and explicit invocation are now
@@ -101,3 +137,13 @@ All notable changes to this repository will be documented in this file.
 - Updated `independent-review-subagent` to express no-context forking through
   current-runtime equivalents such as `fork_turns: "none"` rather than relying
   on one obsolete API field name.
+
+### Fixed
+
+- Replaced the author-machine command in `manage-goal-docs` with an
+  installer-independent `<skill-dir>` invocation resolved from the active
+  `SKILL.md` path.
+- Normalized `humanizer` frontmatter by moving its version into `metadata` and
+  expressing `allowed-tools` as the space-separated string required by the
+  Agent Skills specification, while removing the redundant `any-agent`
+  compatibility declaration.

@@ -24,6 +24,7 @@ REDACTION_MARKER = "<redacted>"
 SUPPORTED_SCHEMA_VERSION = 1
 DIRTY_POLICIES = {"block", "block-store-release", "warn", "allow"}
 UPLOAD_TRIGGER_FALLBACK = ("uploadAfterBuild", "iosUploadAfterBuild", "upload")
+DEFAULT_STARTUP_URL_PATTERN = r"Release console:\s+(\S+)"
 
 
 def parse_bool(value: str) -> bool:
@@ -71,6 +72,44 @@ def require_string_list(
     return [str(item) for item in value]
 
 
+def validate_startup_url_pattern(contract: dict[str, Any]) -> None:
+    release_console = contract.get("releaseConsole")
+    if not isinstance(release_console, dict):
+        return
+    pattern = release_console.get(
+        "startupUrlPattern",
+        DEFAULT_STARTUP_URL_PATTERN,
+    )
+    if not isinstance(pattern, str):
+        raise SystemExit("releaseConsole.startupUrlPattern must be a string")
+    try:
+        compiled = re.compile(pattern)
+    except re.error as error:
+        raise SystemExit(
+            "releaseConsole.startupUrlPattern must be a valid regular expression: "
+            f"{error}"
+        ) from error
+    if compiled.groups < 1:
+        raise SystemExit(
+            "releaseConsole.startupUrlPattern must contain at least one capture group"
+        )
+
+
+def parse_startup_console_url(value: Any) -> urllib.parse.ParseResult:
+    field_name = "releaseConsole.startupUrlPattern first capture group"
+    if not isinstance(value, str) or not value:
+        raise SystemExit(f"{field_name} must contain the console URL")
+    try:
+        parsed = urllib.parse.urlparse(value)
+    except ValueError as error:
+        raise SystemExit(
+            f"{field_name} must be an absolute http(s) URL: {error}"
+        ) from error
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise SystemExit(f"{field_name} must be an absolute http(s) URL")
+    return parsed
+
+
 def validate_contract(contract: dict[str, Any]) -> None:
     if contract.get("schemaVersion") != SUPPORTED_SCHEMA_VERSION:
         raise SystemExit(
@@ -82,6 +121,7 @@ def validate_contract(contract: dict[str, Any]) -> None:
             "dirtyWorktreePolicy must be one of: "
             + ", ".join(sorted(DIRTY_POLICIES))
         )
+    validate_startup_url_pattern(contract)
     targets = contract.get("targets")
     if not isinstance(targets, list) or not targets:
         raise SystemExit("contract targets must be a non-empty list")
@@ -97,6 +137,13 @@ def validate_contract(contract: dict[str, Any]) -> None:
         seen.add(target_id)
         if not isinstance(target.get("storeLike"), bool):
             raise SystemExit(f"target {target_id} must define boolean storeLike")
+        for key in ("requiredFiles", "requiredEnvFiles"):
+            if key in target:
+                require_string_list(
+                    target.get(key),
+                    f"target {target_id}.{key}",
+                    required=True,
+                )
         allowed_option_names(target)
         require_string_list(target.get("forbiddenOptions"), f"target {target_id}.forbiddenOptions")
         validate_upload_schema(target)
@@ -344,6 +391,14 @@ def validate_evidence_schema(target: dict[str, Any]) -> None:
         return
     if not isinstance(evidence, dict):
         raise SystemExit(f"target {target.get('id', '<unknown>')}.evidence must be an object")
+    if "requiredForSuccess" in evidence and not isinstance(
+        evidence.get("requiredForSuccess"),
+        bool,
+    ):
+        raise SystemExit(
+            f"target {target.get('id', '<unknown>')}.evidence.requiredForSuccess "
+            "must be boolean"
+        )
     for key, value in evidence.items():
         if key.endswith("Labels"):
             require_string_list(value, f"target {target.get('id', '<unknown>')}.evidence.{key}")
@@ -414,7 +469,7 @@ class ReleaseConsole:
         if not isinstance(command, list) or not command:
             raise SystemExit("releaseConsole.startCommand must be a non-empty array")
         cmd = [str(item) for item in command]
-        pattern = str(self.config.get("startupUrlPattern", r"Release console:\s+(\S+)"))
+        pattern = str(self.config.get("startupUrlPattern", DEFAULT_STARTUP_URL_PATTERN))
         auth = self.config.get("auth", {})
         if isinstance(auth, dict):
             self.token_key = str(auth.get("tokenQueryParameter", ""))
@@ -450,7 +505,7 @@ class ReleaseConsole:
                     print(redact(line.rstrip(), self.contract))
                 match = url_pattern.search(line)
                 if match:
-                    parsed = urllib.parse.urlparse(match.group(1))
+                    parsed = parse_startup_console_url(match.group(1))
                     self.base_url = f"{parsed.scheme}://{parsed.netloc}"
                     if self.token_key:
                         query = urllib.parse.parse_qs(parsed.query)

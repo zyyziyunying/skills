@@ -27,7 +27,10 @@ Keep the contract explicit and boring. Prefer strings, booleans, arrays, and com
 The `releaseConsole` object should describe:
 
 - `startCommand`: exact command array to start the local console.
-- `startupUrlPattern`: regex whose first capture group is the local console URL.
+- `startupUrlPattern`: regex whose first capture group is the complete absolute
+  `http://` or `https://` local console URL, including the query string when it
+  carries the auth token. Use non-capturing groups for other regex structure;
+  relative, non-HTTP, empty, or unmatched first-group values are invalid.
 - `auth`: `tokenQueryParameter` when the startup URL includes a query token.
 - `statusEndpoint`: GET endpoint for non-mutating status.
 - `buildEndpoint`: POST endpoint for starting a build.

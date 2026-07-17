@@ -1,6 +1,5 @@
 ---
 name: humanizer
-version: 2.8.3
 description: |
   Manual-only skill. Use only when the user explicitly invokes humanizer,
   $humanizer, /humanizer, or asks to use the humanizer skill. Do not trigger
@@ -9,14 +8,9 @@ description: |
   English writing from text and make it sound more natural while preserving
   meaning.
 license: MIT
-compatibility: any-agent
-allowed-tools:
-  - Read
-  - Write
-  - Edit
-  - Grep
-  - Glob
-  - AskUserQuestion
+metadata:
+  version: "2.8.3"
+allowed-tools: Read Write Edit Grep Glob AskUserQuestion
 ---
 
 # Humanizer: Remove AI Writing Patterns

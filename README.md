@@ -51,7 +51,7 @@ npx skills add zyyziyunying/skills --all
 | `flutter-add-widget-test` | Add Flutter widget tests for rendering and interactions. |
 | `flutter-app-size` | Measure, analyze, and reduce Flutter release artifact size. |
 | `flutter-best-layout` | Flutter layout planning, review, preview, implementation, and responsive/adaptive UI guidance. |
-| `flutter-implement-json-serialization` | Implement App API DTO and JSON mapping work in the BesideYou Flutter app. |
+| `flutter-implement-json-serialization` | Choose and implement project-aware generated, hybrid, or manual Flutter JSON serialization. |
 | `flutter-release-packager` | Guide Flutter release packaging with preflight checks and artifact evidence. |
 | `git-commit-helper` | Plan and create intentional atomic git commits. |
 | `goal-first-development` | Canonical goal-first delivery entry with risk-based independent validation. |

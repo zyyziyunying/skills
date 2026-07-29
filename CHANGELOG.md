@@ -121,6 +121,13 @@ All notable changes to this repository will be documented in this file.
 
 ### Changed
 
+- Refactored `flutter-implement-json-serialization` around a project-Harness
+  decision gate for generated, hybrid, or manual mapping; generator adoption
+  now includes dependency, command, output, freshness, compatibility, and
+  focused-test policy. The skill is now project-agnostic: project transport,
+  validation, error, generated-file, and compatibility rules remain in each
+  repository's Harness, while the reusable skill owns strategy and
+  semantic-parity guidance.
 - Expanded `flutter-best-layout` to cover responsive/adaptive layout decisions, constraint reasoning, breakpoint policy, fixed design canvas adaptation, screen/window sizing, and orientation-sensitive layout review.
 - Added `flutter-best-layout/references/responsive-layout.md` for reusable layout judgment, including `MediaQuery.sizeOf`, `paddingOf`, `viewInsetsOf`, `LayoutBuilder` boundaries, surface classification, anti-patterns, review/refactor checklists, and rules against magic `600px`/`840px` breakpoints.
 - Tightened `flutter-best-layout` delivery gates for screenshot/Figma UI restoration, fixed `Stack` overlays, text scale/localization checks, semantic affordances, visual links, and prototype shortcut disclosure.

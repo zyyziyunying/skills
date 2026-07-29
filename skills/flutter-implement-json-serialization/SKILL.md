@@ -1,142 +1,107 @@
 ---
 name: flutter-implement-json-serialization
-description: Use when implementing or modifying App API DTO parsing, API repository JSON mapping, JSON request bodies, or App API read-model serialization in the BesideYou Flutter app. Use AppApiGateway and AppApiJsonReader for App API work, preserve envelope/AppApiException semantics, and add focused fromJson/toJson tests when behavior changes. Do not apply by default to ARB/env/config files, runtime manifests, portrait-player manifests, third-party JSON contracts, or unrelated local JSON.
-metadata:
-  model: models/gemini-3.1-pro-preview
-  last_modified: Sat, 23 May 2026 00:00:00 GMT
+description: Implement, review, or migrate JSON serialization in Flutter or Dart models, API DTOs, request bodies, and persisted data. Use to choose a project-approved generated, hybrid, or manual strategy; adopt or reuse JSON code generation; preserve existing wire, validation, error, and compatibility semantics; and add focused serialization tests. Read the project Harness before changing tooling or contracts.
 ---
-# BesideYou Flutter JSON Serialization
 
-Use this skill for BesideYou App API JSON work:
+# Flutter JSON Serialization
 
-- DTO `fromJson` / `toJson`
-- repository mapping from App API `content`
-- JSON request bodies
-- App API-derived read models or persisted JSON
-- focused parser/mapper tests
+## Decide From Project Facts
 
-Do not use it as the default workflow for ARB, env/config JSON, runtime
-manifests, portrait-player manifests, third-party contracts, or unrelated local
-fixtures. Those belong to their owner module and keep that module's parser and
-error semantics.
+Read the nearest `AGENTS.md` and the authoritative owner sources for the touched
+API, persistence, cache, or local-data boundary. Choose:
 
-## Required Reading
+- `generated` for approved tooling and stable, mostly one-to-one fields;
+- `hybrid` for generated field mapping plus handwritten normalization,
+  validation, error translation, fallback, or domain conversion;
+- `manual` for small, dynamic, polymorphic, security-sensitive, or conditional
+  contracts.
 
-For non-trivial edits, read:
+Optimize recurring cost, not handwritten line count. Project facts override
+these examples.
 
-1. `AGENTS.md` and `SPEC.md`
-2. `lib/app/api/README.md` for App API transport/JSON rules
-3. the nearest module `README.md` for the touched files
-4. `../../packages/common/AGENTS.md` only when editing shared `package:common`
+For migration or adoption, inspect generation/test policies, `pubspec.yaml`,
+the lockfile, optional `build.yaml`, nearby sources/outputs, callers, and tests.
+Record a Serialization Context Receipt:
 
-## Reference Routing
+- owner, data boundary, and accepted/emitted wire contract;
+- direct dependencies and established serialization convention;
+- parity rules for types, missing/null, normalization, aliases, defaults,
+  enums, unknown fields, conditional output, errors, and source context;
+- selected strategy, compatibility posture, command/output policy, freshness
+  enforcement, tests, and allowed commands.
 
-Read `references/implementation-patterns.md` when implementing or reviewing DTO `fromJson`, repository content mapping, App API list parsing, request-body `toJson`, or wire-name enum handling; after reading, choose the applicable parser/mapper pattern and identify the focused tests needed for the changed shape.
+Share it for adoption, broad migration, or a breaking decision. Never infer
+generator adoption from `build_runner` or a transitive package. Update the
+authoritative Harness when the contract or generator policy changes.
 
-## Command Boundary
+## Route References
 
-Use the Flutter command tiers for validation:
+- Read [references/serialization-strategy.md](references/serialization-strategy.md)
+  for adoption, library choice, migration, cohort selection, or Harness
+  ownership.
+- Read [references/implementation-patterns.md](references/implementation-patterns.md)
+  for generated/hybrid code, converters, nested models, errors, requests,
+  enums, or parity tests.
+- Read both for an implementation that also adopts or migrates a generator.
 
-- Default allowed: static reading, code edits, `dart analyze`,
-  `flutter analyze`, and targeted `dart test` / `flutter test test/...`
-  commands.
-- Conditionally allowed: `flutter test integration_test`,
-  `flutter run -d web-server`, hot reload, and screenshot/preview checks only
-  when the nearest `AGENTS.md`, `TEST.md`, or current user request explicitly
-  allows the exact command.
-- Separate confirmation required: real device or simulator install/run,
-  `flutter build`, release/package work, store/account/payment flows, and
-  mutable backend-state flows.
+Routine manual mapping should follow the nearest established owner pattern
+without loading either reference.
 
-For this JSON skill, prefer the smallest parser, mapper, or repository tests
-that cover the behavior change.
+## Preserve Owner Semantics
 
-## Core Contract
+Generation owns mechanical conversion only. Keep project transport, envelope,
+storage corruption, validation, and error boundaries outside generated code.
 
-BesideYou App API JSON is not generic HTTP JSON:
+Preserve the existing contract through annotations, tested converters, a small
+adapter, or manual mapping. Generated casts do not automatically preserve:
 
-- repositories use injected `AppApiGateway`
-- `AppApiGateway` owns Dio setup, auth, logging, envelope validation, error
-  mapping, and `content` unwrapping
-- repositories receive unwrapped `content`, not top-level `{code,msg,content}`
-- DTO/read-model parsing uses `AppApiJsonReader`
-- malformed App API response shapes surface as `AppApiException`
+- integer-only versus numeric coercion;
+- trim, required-nonblank, or optional blank-to-null behavior;
+- missing-key versus explicit-`null` behavior;
+- alias priority, enum fallback, unknown-field policy, or conditional output;
+- project exception type and endpoint/path/record/source context.
 
-Avoid in App API work:
+Do not leak generator failures through a public boundary that defines another
+error type.
 
-- `package:http`
-- repository-level `jsonDecode(response.body)`
-- raw `statusCode == 200` / `201` checks
-- envelope parsing outside `AppApiGateway`
-- generic `Exception` / `FormatException` for App API DTO parse failures
-- defaulting every shape to `Map<String, dynamic>`
+## Adopt Generation Deliberately
 
-## Implementation Pattern
+Reuse the owner's generator. Introduce a new stack only for an explicit cohort.
+Treat dependencies, configuration, command, outputs, commit policy, freshness,
+Harness updates, and tests as one adoption change.
 
-Use `Map<String, Object?>` for JSON objects and pass a request path/source label
-through parsing. Repository mapping should stay relative to `API_BASE_URL` and
-parse only unwrapped `content`. Use the reference routing above for concrete
-DTO, list, request-body, and enum examples.
+Start with a bounded pilot and inspect both source and generated diffs before
+scaling. Never hand-edit generated output. Treat machine-generated files as
+exempt from handwritten source-size TODO markers and enforce that exemption in
+the project Harness; handwritten sources remain covered.
 
-## Enums
+## Respect Request And Format Boundaries
 
-Model wire names explicitly and parse with `AppApiJsonReader.enumField` or
-`enumFromWireName`.
+Generate request `toJson` only for mechanical projection. Keep it manual when
+it normalizes input, conditionally omits or flattens keys, chooses mutually
+exclusive or legacy keys, or enforces write, entitlement, account, payment, or
+security rules. Test the exact payload.
 
-Unsupported App API enum values should become invalid-response
-`AppApiException`s unless the nearest module README explicitly defines
-forward-compatible fallback behavior.
+For caches, manifests, configuration, ARB, third-party contracts, and fixtures,
+follow the format owner's parser and failure semantics. Do not impose an API DTO
+generator on a schema- or tool-owned format without owner approval.
 
-## Local JSON Boundary
+## Validate And Report
 
-`dart:convert` is fine for local strings, fixtures, caches, and manifests. The
-boundary is semantics, not file location:
+Use the project-approved commands and the applicable parity matrix from the
+references. Verify observable wire behavior, project error translation, source
+context, and generated-output freshness rather than generated boilerplate
+itself. Run only Harness- or user-approved generation and dependency commands.
 
-- use `AppApiJsonReader` when local JSON intentionally mirrors App API
-  DTO/read-model shapes
-- preserve owner helpers and owner error semantics for runtime manifests,
-  portrait-player manifests, third-party contracts, ARB, env/config, and
-  owner-specific cache formats
-- do not convert manifest `FormatException` or corruption handling into
-  `AppApiException` just for consistency
-- if manifest parsing needs cleanup, add a manifest-owner local helper and
-  focused tests in that module
+Treat changes to public factories, accepted inputs, emitted keys, missing/null,
+normalization, unknown-value policy, errors, or persisted shapes as potentially
+breaking. State affected behavior and callers, migration or rollback, and
+required test/doc updates prominently.
 
-Do not offload parsing to `compute()` unless a measured jank risk justifies it.
-
-## Tests
-
-Add the smallest useful tests for changed behavior:
-
-- DTO `fromJson`: required/optional fields, nested objects/lists, enums,
-  malformed shapes
-- request/read-model `toJson`
-- repository mapping when endpoint path, gateway use, or envelope behavior
-  matters
-
-Run targeted tests only, for example:
-
-```bash
-flutter test test/app/api/app_api_json_reader_test.dart
-flutter test test/app/pages/pet_create/data/pet_create_repository_test.dart
-```
-
-## Traceability
-
-When this skill guides JSON implementation or tests, mention it in the final
-response:
+When this skill guides implementation or review, include:
 
 `已应用 skill: flutter-implement-json-serialization`
 
-Also briefly name the touched DTO/repository/test files and verification.
-
-Do not add skill markers, comments, metadata, or tracking fields to production
-JSON, API payloads, DTO `toJson()` output, cache formats, tests, or business
-code solely to record skill usage.
-
-## Final Checks
-
-- Keep business endpoint DTOs near their domain owner, not in `lib/app/api/`.
-- Do not move BesideYou business API definitions into `packages/common`.
-- If a Dart file now exceeds 2000 lines, add `// TODO 代码待拆分` after imports
-  unless it already exists.
+Report the selected strategy, touched code and Harness sources, generated
+outputs, and validation. Never add skill markers or tracking fields to product
+JSON, source code, generated output, fixtures, or tests.

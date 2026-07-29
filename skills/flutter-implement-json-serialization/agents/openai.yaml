@@ -1,0 +1,6 @@
+interface:
+  display_name: "Flutter JSON Serialization"
+  short_description: "Choose safe generated, hybrid, or manual JSON mapping"
+  default_prompt: "Use $flutter-implement-json-serialization to choose and implement the project-approved JSON strategy while preserving wire, validation, error, and compatibility semantics."
+policy:
+  allow_implicit_invocation: true

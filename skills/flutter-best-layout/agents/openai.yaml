@@ -1,7 +1,7 @@
 interface:
   display_name: "Flutter Best Layout"
-  short_description: "Flutter responsive UI layout and preview guidance"
-  default_prompt: "Use $flutter-best-layout to implement, review, or refactor a Flutter UI against the actual viewport and parent constraints, treating design drafts as references unless the surface is explicitly fixed-format."
+  short_description: "Simple Flutter layouts with focused guardrails"
+  default_prompt: "Use $flutter-best-layout to choose the simplest suitable Flutter widget pattern while avoiding unnecessary fixed sizing, nested scrolling, and lost interaction semantics."
 
 policy:
   allow_implicit_invocation: true

@@ -50,7 +50,7 @@ npx skills add zyyziyunying/skills --all
 | `expert-agent-team` | Expert-agent execution used directly or by an explicit owner workflow. |
 | `flutter-add-widget-test` | Add Flutter widget tests for rendering and interactions. |
 | `flutter-app-size` | Measure, analyze, and reduce Flutter release artifact size. |
-| `flutter-best-layout` | Flutter layout planning, review, preview, implementation, and responsive/adaptive UI guidance. |
+| `flutter-best-layout` | Simple Flutter widget choices with flexible constraints and focused layout guardrails. |
 | `flutter-implement-json-serialization` | Choose and implement project-aware generated, hybrid, or manual Flutter JSON serialization. |
 | `flutter-release-packager` | Guide Flutter release packaging with preflight checks and artifact evidence. |
 | `git-commit-helper` | Plan and create intentional atomic git commits. |

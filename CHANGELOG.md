@@ -34,6 +34,30 @@ All notable changes to this repository will be documented in this file.
     generated template now use the same ownership model. Validate frontmatter,
     create a goal through the bundled script, and verify that goal-level status
     remains in `goal.html` while detailed facts are not duplicated.
+- Simplified `flutter-best-layout` from a prescriptive layout-delivery workflow
+  into high-freedom widget-pattern and flexible-constraint guidance.
+  - Affected API/behavior: invoking `$flutter-best-layout` no longer requires a
+    Context Receipt, fixed compact/medium/wide matrix, broad reference loading,
+    or automatic `LAYOUT-PREVIEW.md` creation. The public
+    `references/layout-context-roadmap.md` and
+    `references/layout-pitfalls.md` paths are removed. The retained
+    `references/preview-workflow.md` is a smaller compatibility contract loaded
+    only for app-style preview work.
+  - Affected callers: prompts, project layout entries, documentation, or direct
+    links that relied on those removed references or on the skill to enforce the
+    former delivery gates.
+  - Migration: keep project-specific required reading, design facts, device
+    matrices, validation boundaries, and documentation requirements in the
+    project's own `AGENTS.md`, `TEST.md`, `DESIGN.md`, owner documentation, or
+    equivalent facts. Link to `layout-patterns.md` for component composition,
+    `responsive-layout.md` for constraint reasoning, and `preview-workflow.md`
+    only when preview reachability or lifecycle guidance is needed.
+  - Validation/docs: README and skill metadata now describe the smaller scope.
+    The core skill retains concise high-loss guidance for project facts, parent
+    constraints, scroll ownership, semantic controls, and evidence boundaries;
+    references retain bounded-axis, fixed-format, responsive, and preview
+    details. Validate frontmatter, internal links, and known project preview
+    consumers when updating the skill.
 - Hardened `flutter-release-packager` contract validation to reject malformed
   release inputs before status or build execution.
   - Affected API/behavior: `requiredFiles` and `requiredEnvFiles`, when present,
@@ -148,9 +172,6 @@ All notable changes to this repository will be documented in this file.
   validation, error, generated-file, and compatibility rules remain in each
   repository's Harness, while the reusable skill owns strategy and
   semantic-parity guidance.
-- Expanded `flutter-best-layout` to cover responsive/adaptive layout decisions, constraint reasoning, breakpoint policy, fixed design canvas adaptation, screen/window sizing, and orientation-sensitive layout review.
-- Added `flutter-best-layout/references/responsive-layout.md` for reusable layout judgment, including `MediaQuery.sizeOf`, `paddingOf`, `viewInsetsOf`, `LayoutBuilder` boundaries, surface classification, anti-patterns, review/refactor checklists, and rules against magic `600px`/`840px` breakpoints.
-- Tightened `flutter-best-layout` delivery gates for screenshot/Figma UI restoration, fixed `Stack` overlays, text scale/localization checks, semantic affordances, visual links, and prototype shortcut disclosure.
 - Updated `dart-add-unit-test` and `flutter-add-widget-test` to classify failures
   against authoritative behavior sources before editing implementation or
   assertions, prohibit assertion weakening merely to obtain passing tests, and

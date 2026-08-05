@@ -1,235 +1,37 @@
 # Flutter Layout Patterns
 
-Choose a pattern from the user task, content hierarchy, and scroll model. Combine patterns when needed, but keep one primary layout owner for each axis.
+Use these as options, not prescriptions. Choose the tree that most clearly explains the UI.
 
-## Adaptive Sizing Primitives
+## Match the Relationship
 
-Use these primitives after the layout brief decides what should change across compact, medium, and wide constraints.
+- Sequential content: `Column` or `Row`.
+- A child consumes remaining flex space: `Expanded` or `Flexible`.
+- Siblings may reflow: `Wrap`.
+- Elements intentionally overlap: `Stack` and, when needed, `Positioned`.
+- Small finite content may exceed the viewport: `SingleChildScrollView`.
+- Repeated or potentially large content: `ListView` or `GridView`.
+- Headers, lists, grids, and collapsing regions share a scroll: `CustomScrollView` with slivers.
+- A component changes composition according to its allocated space: `LayoutBuilder` at that component boundary.
 
-- Whole-window facts: use `MediaQuery.sizeOf(context)` when route-level decisions depend on the app window.
-- Parent-allocated facts: use `LayoutBuilder` around the section or component whose parent constraints determine structure.
-- Safe areas and keyboard: use `MediaQuery.paddingOf(context)` and `MediaQuery.viewInsetsOf(context)` where those insets affect fixed actions, sheets, dialogs, or forms.
-- Remaining space: use `Expanded` and `Flexible` only inside a deliberate `Row`, `Column`, or `Flex` model.
-- Readable width: wrap text-heavy or form-heavy content in `ConstrainedBox` and usually center it on wide screens.
-- Responsive grids: use `SliverGridDelegateWithMaxCrossAxisExtent` when tile width matters more than a fixed column count.
-- Stable media and tiles: use `AspectRatio`, explicit `BoxFit`, and fixed placeholder/error geometry.
+## Recognize Common Shapes
 
-Breakpoints are valid when they describe a real structural transition, such as compact route navigation becoming master-detail, a bottom bar becoming a navigation rail, or a filter drawer becoming a side panel. Name the threshold after that transition. Do not add a generic `largeScreenMinWidth = 600` branch just because the surface is resizable.
+- Detail, reading, or form: natural vertical flow; add scrolling when it can grow; use a meaningful `maxWidth` on wide parents.
+- Feed or list: one lazy collection as the main scroll owner.
+- Gallery: a lazy grid with useful tile width or aspect ratio, rather than a fixed column count copied from one screenshot.
+- Header, body, bottom action: `Column`, an `Expanded` scrollable body, and a safe bottom action.
+- Compact versus wide: keep one composition until extra space enables a genuinely better structure such as master-detail.
+- Media: preserve meaningful proportions with `AspectRatio` and `BoxFit`; keep ordinary content in normal flow.
+- Dialog or sheet: let short content size naturally; bound and scroll growing content; account for keyboard and safe area.
 
-## Single-Column Detail or Reading Page
+## Diagnose Bounded and Unbounded Axes
 
-Use for profile/detail/settings/about/content pages where reading order matters more than density.
+Find which parent supplies finite space before adding a wrapper.
 
-Structure:
+- A vertical lazy list inside a bounded `Column` usually needs `Expanded` or another meaningful height bound.
+- Do not use `Expanded` or `Flexible` on the same unbounded axis inside `SingleChildScrollView`.
+- When a header and lazy collection scroll together, prefer one sliver-based scroll owner over nested vertical scrollables.
+- Reserve `shrinkWrap` for a deliberately small nested collection; it is not a general constraint fix.
 
-- `Scaffold` with app bar or local header when navigation matters.
-- `CustomScrollView` or `ListView` for the primary vertical scroll.
-- Centered `ConstrainedBox` for readable content width on wide screens.
-- Stable sections with local spacing, not nested cards around every section.
+## Keep Structure Meaningful
 
-Prefer:
-
-- `SliverToBoxAdapter` for mixed content.
-- `SliverPadding` for page gutters.
-- Max width around text and forms.
-
-Avoid:
-
-- Full-width paragraphs on tablets/desktops.
-- A phone-only centered column when wide screens should reveal supporting content.
-
-## Form or Checkout Page
-
-Use for login, onboarding, edit profile, payment, settings forms, and flows with validation.
-
-Structure:
-
-- Primary scroll owner that survives keyboard insets.
-- Constrained form width.
-- Primary action either in scroll flow for short forms or pinned safely for transactional forms.
-- Error text and validation states included in height planning.
-
-Prefer:
-
-- `MediaQuery.viewInsetsOf(context).bottom` when keyboard behavior affects layout.
-- `SafeArea` around fixed actions.
-- `AutofillGroup`, focus traversal, and meaningful input actions when appropriate.
-- Real controls and semantics for gift-code links, restore actions, legal links, and purchase actions. If a visual affordance is intentionally unavailable in a prototype, disclose it and avoid making it look production-ready.
-
-Avoid:
-
-- Fixed-height forms that break when validation messages appear.
-- Submit buttons hidden behind keyboard.
-- Independent scroll views inside field groups.
-- Purchase, legal, restore, or gift-code text that looks tappable but is only styled text.
-
-## Feed or List Page
-
-Use for timelines, activity feeds, item lists, notifications, search results, and selectable rows.
-
-Structure:
-
-- One lazy scroll owner: usually `ListView.builder`, `CustomScrollView`, or slivers.
-- Header/filter/search regions as slivers or fixed outer chrome, not nested scroll hacks.
-- Empty/loading/error states that occupy intentional space.
-
-Prefer:
-
-- `SliverList` for mixed page chrome.
-- Stable item extents only when content shape is predictable.
-- Pull-to-refresh and pagination boundaries that respect the primary scroll owner.
-
-Avoid:
-
-- `SingleChildScrollView` plus `Column` plus `ListView.builder`.
-- Blanket `shrinkWrap: true` for large or unknown lists.
-- Rows with trailing actions that collapse long titles unpredictably.
-
-## Grid or Gallery Page
-
-Use when comparison and browsing matter: photos, products, selectable collections, cards.
-
-Structure:
-
-- Lazy grid with a clear tile aspect ratio.
-- Max cross-axis extent when tiles should keep a preferred size.
-- Explicit media fit and placeholder/error states.
-
-Prefer:
-
-- `SliverGridDelegateWithMaxCrossAxisExtent` for responsive tile counts.
-- `AspectRatio` around media.
-- Selection and hover/focus states sized into the tile.
-
-Avoid:
-
-- Fixed column counts copied from one screen size.
-- Tiles whose text can resize the whole grid unpredictably.
-- Unbounded images inside grid cells.
-
-## Master-Detail
-
-Use when wide screens should show a list and selected detail together, while compact screens navigate between them.
-
-Structure:
-
-- Compact: list route and detail route.
-- Wide: list pane plus detail pane in one scaffold.
-- Selection state shared outside the list item.
-
-Prefer:
-
-- A single breakpoint based on when both panes are useful.
-- Constrained pane widths instead of equal splits by habit.
-- Empty detail state when no item is selected.
-
-Avoid:
-
-- Rendering both panes on compact screens.
-- Rebuilding unrelated pane state during selection changes.
-- A sidebar wider than the useful list content.
-
-## Media-Heavy Page
-
-Use for image/video/story/camera/preview/detail pages where media is the anchor.
-
-Structure:
-
-- Reserve stable media space with `AspectRatio`, constraints, or viewport-relative bounds.
-- Put controls in predictable overlays or below-media regions.
-- Keep metadata/actions readable without covering important media content.
-
-Prefer:
-
-- Explicit `BoxFit` decisions.
-- Safe-area-aware overlays.
-- Placeholder/error media surfaces with the same geometry as loaded media.
-
-Avoid:
-
-- Letting remote image dimensions determine page geometry.
-- Overlays that hide controls under system insets.
-- Text blocks floating over busy media without contrast handling.
-
-## Media + Purchase Landing
-
-Use when a media-heavy hero or branded scene also contains a purchase, subscription, donation, or upgrade decision.
-
-Structure:
-
-- Media can keep a fixed ratio or fixed-format treatment when it is genuinely visual content.
-- Price, CTA, legal copy, gift codes, restore actions, errors, and availability states follow checkout/purchase rules, not artboard rules.
-- The purchase region needs natural height, min/max constraints, safe-area/inset handling, and scroll reachability when content grows.
-
-Avoid:
-
-- Treating the whole page as a fixed poster because the background is illustrative.
-- Placing purchase decisions, terms, or restore actions inside screenshot images or fragile `Positioned` overlays.
-- Shipping visual links or empty callbacks without explicit prototype disclosure.
-
-## Dashboard or Operational Screen
-
-Use for dense, repeated decision-making surfaces: metrics, operations, CRM, admin, health, finance.
-
-Structure:
-
-- Prioritize scanning, comparison, and repeated action.
-- Use restrained section grouping and consistent alignment.
-- Increase density on wider screens only when it improves scanning.
-
-Prefer:
-
-- Data tables, split panes, compact filters, and clear status affordances.
-- Breakpoints that add useful panels or columns.
-- Consistent row heights and numeric alignment.
-
-Avoid:
-
-- Marketing-style hero layouts.
-- Oversized cards for every metric.
-- Decorative layout that reduces scan speed.
-
-## Tool or Workspace
-
-Use for editors, canvases, builders, inspectors, map views, and configuration tools.
-
-Structure:
-
-- Fixed toolbar or command region.
-- Flexible work area.
-- Optional side panel/inspector that appears only when space supports it.
-- Clear drag, zoom, selection, and keyboard behavior when relevant.
-
-Prefer:
-
-- `Row`/`Column` with deliberate `Expanded` regions.
-- Split panes with min/max widths.
-- Canvas/work area that owns gestures without fighting parent scroll.
-
-Avoid:
-
-- Putting the primary work area inside decorative cards.
-- Panels that can shrink below usable width.
-- Gesture regions nested inside competing scrollables.
-
-## Dialog and Bottom Sheet
-
-Use for bounded tasks, confirmation, pickers, filters, and short creation flows.
-
-Structure:
-
-- Max width for dialogs and max height for sheets.
-- Header and actions fixed when content can scroll.
-- Internal scroll only for content, not the entire surface unless the task is short.
-
-Prefer:
-
-- `SafeArea` and keyboard-aware padding.
-- `DraggableScrollableSheet` only when drag behavior is core to the UX.
-- Clear cancellation and confirmation placement.
-
-Avoid:
-
-- Dialog content growing beyond viewport height.
-- Bottom sheet actions hidden by keyboard or gesture nav.
-- Nesting a full page scaffold inside a modal without need.
+Prefer `Padding` over an otherwise empty `Container`. Add decoration only where decoration exists. Place `LayoutBuilder` where composition changes, not around every child. Extract a widget when it has meaning, behavior, or repeated structure—not merely to shorten a build method.

@@ -1,6 +1,6 @@
 interface:
   display_name: "Goal-First Delivery"
   short_description: "Deliver goals with risk-based independent validation"
-  default_prompt: "Use $goal-first-development to deliver this outcome from a goal.html truth source, classify validation risk, orchestrate implementation, and close only with decisive evidence."
+  default_prompt: "Use $goal-first-development to deliver this outcome from goal documentation rooted at goal.html, classify validation risk, orchestrate implementation, and close only with decisive evidence."
 policy:
   allow_implicit_invocation: false

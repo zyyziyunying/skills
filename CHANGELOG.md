@@ -14,6 +14,26 @@ All notable changes to this repository will be documented in this file.
 
 ### Breaking Changes
 
+- Changed `manage-goal-docs` from a single-file truth-source contract to a
+  one-owner-per-fact model rooted at `goal.html`.
+  - Affected API/behavior: `goal.html` now owns the goal-level overview and
+    document routing, while semantic Markdown or HTML documents may own detailed
+    research, design, checks, plans, problems, or evidence. The creation template
+    no longer requires those concerns as fixed sections. `create_goal.py` also
+    accepts a concise outcome instead of enforcing one sentence and accepts any
+    lowercase kebab-case slug up to 80 characters instead of requiring 3 to 8
+    words.
+  - Affected callers: `$goal-first-development`, prompts or tooling that read
+    only `goal.html`, and existing workflows that duplicate all mutable current
+    facts into the overview.
+  - Migration: keep existing single-file goals when they remain clear. For split
+    goals, link every scoped owner from `goal.html`, state its ownership area,
+    update the owning document first, and teach callers to follow those links
+    before applying completeness, validation, or closure gates.
+  - Validation/docs: `goal-first-development`, README, skill metadata, and the
+    generated template now use the same ownership model. Validate frontmatter,
+    create a goal through the bundled script, and verify that goal-level status
+    remains in `goal.html` while detailed facts are not duplicated.
 - Hardened `flutter-release-packager` contract validation to reject malformed
   release inputs before status or build execution.
   - Affected API/behavior: `requiredFiles` and `requiredEnvFiles`, when present,

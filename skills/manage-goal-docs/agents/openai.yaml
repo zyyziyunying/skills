@@ -1,4 +1,4 @@
 interface:
   display_name: "Goal Docs"
-  short_description: "Create semantic goal folders under ./goals"
-  default_prompt: "Use $manage-goal-docs to create a semantically named goal.html truth source for this task."
+  short_description: "Create flexible, scoped goal documentation"
+  default_prompt: "Use $manage-goal-docs to organize this goal with a concise overview and clearly owned supporting documents."

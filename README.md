@@ -59,7 +59,7 @@ npx skills add zyyziyunying/skills --all
 | `independent-review-subagent` | No-context independent review used directly or by an explicit owner workflow. |
 | `independent-test-verifier` | Independent test design and test-only verification from authoritative behavior sources. |
 | `local-image-to-webp` | Convert local images to WebP while preserving originals. |
-| `manage-goal-docs` | Create and maintain goal folders with a single `goal.html` truth source. |
+| `manage-goal-docs` | Create and maintain goal folders with a concise `goal.html` overview and clearly owned scoped documents. |
 | `patrol-e2e` | Explicit Patrol E2E workflow for Flutter setup, execution, and evidence. |
 | `playwright` | Browser automation through Playwright CLI and wrapper scripts. |
 | `playwright-interactive` | Persistent Playwright browser and Electron debugging. |

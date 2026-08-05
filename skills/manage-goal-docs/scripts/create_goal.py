@@ -20,17 +20,9 @@ ASSET_CSS = SKILL_ROOT / "assets" / "goal.css"
 
 
 def validate_goal(value: str) -> str:
-    goal = value.strip()
+    goal = " ".join(value.split())
     if not goal:
         raise ValueError("goal must not be empty")
-    if "\n" in goal or "\r" in goal:
-        raise ValueError("goal must be a single sentence without line breaks")
-    if len(goal) > 140:
-        raise ValueError("goal must be concise, ideally no more than 140 characters")
-    goal_without_inner_dots = re.sub(r"(?<=\w)\.(?=\w)", "", goal)
-    sentence_endings = re.findall(r"[。！？.!?]", goal_without_inner_dots)
-    if len(sentence_endings) > 1:
-        raise ValueError("goal must be one sentence; found multiple sentence endings")
     return goal
 
 
@@ -40,18 +32,10 @@ def validate_slug(value: str) -> str:
         raise ValueError("slug must not be empty")
     if slug != slug.lower():
         raise ValueError("slug must use lowercase letters, digits, and hyphens only")
-    if len(slug) > 64:
-        raise ValueError("slug must be 64 characters or fewer")
-    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)+", slug):
-        raise ValueError(
-            "slug must be kebab-case with at least three semantic words, "
-            "for example subscription-global-analytics"
-        )
-    words = slug.split("-")
-    if not 3 <= len(words) <= 8:
-        raise ValueError("slug must contain 3 to 8 semantic words")
-    if any(len(word) < 2 for word in words):
-        raise ValueError("slug words must be at least 2 characters long")
+    if len(slug) > 80:
+        raise ValueError("slug must be 80 characters or fewer")
+    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug):
+        raise ValueError("slug must use lowercase kebab-case")
     return slug
 
 
@@ -108,54 +92,20 @@ def build_html(title: str, goal: str, status: str, created: str) -> str:
 
     <section>
       <h2>当前状态</h2>
-      <p>草稿：待补充当前状态、关键结论、下一步和阻塞问题。</p>
+      <p>草稿：待补充当前结论、重要阻塞和下一步。按目标需要自由调整本页结构。</p>
     </section>
 
     <section>
-      <h2>Research 摘要</h2>
+      <h2>事实源与关联文档</h2>
       <ul>
-        <li>待补充：事实、现状、约束、未知点和证据来源。</li>
+        <li><code>goal.html</code>：目标、整体状态和文档路由。</li>
+        <li>按需添加细分文档，并说明每份文档唯一负责的事实范围。</li>
       </ul>
     </section>
 
     <section>
-      <h2>Design 决策</h2>
-      <ul>
-        <li>待补充：选定方案、边界、取舍和被放弃的方案。</li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>Check 验收标准</h2>
-      <ul>
-        <li><strong>可观察行为：</strong>待补充外部可观察的完成标准、反例、边界和不变量。</li>
-        <li><strong>正确性来源：</strong>待补充定义预期行为的事实源、契约、规则或用户确认；不得以当前实现作为唯一依据。</li>
-        <li><strong>验证等级：</strong>待补充 L1 / L2 / L3 及理由。</li>
-        <li><strong>开发性验证：</strong>待补充开发 Agent 应执行的单元测试、静态检查或局部验证。</li>
-        <li><strong>独立验证：</strong>待补充独立测试、Review、E2E、设备或人工证据；若不需要，说明理由。</li>
-        <li><strong>完成门槛（待验证）：</strong>待补充哪些结果足以标记 done；验证完成后再记录实际证据。bug 修复还需记录预期的修复前失败信号。</li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>Plan 执行计划</h2>
-      <ul>
-        <li>待补充：按验收标准拆出的执行步骤。</li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>Problem 记录</h2>
-      <ul>
-        <li>暂无。问题可以来自任意阶段，记录当前状态和最终结论。</li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>关联文档</h2>
-      <ul>
-        <li>暂无。若添加 evidence/、assets/ 或 archive/ 材料，在这里链接并用一句话说明内容；当前结论仍保留在 goal.html。</li>
-      </ul>
+      <h2>完成条件</h2>
+      <p>待补充足以关闭此目标的可观察结果与验证证据；详细检查可由独立文档负责。</p>
     </section>
 
     <section>
@@ -181,7 +131,7 @@ def parse_args() -> argparse.Namespace:
         "--slug",
         required=True,
         help=(
-            "Lowercase semantic kebab-case folder slug, 3 to 8 words, "
+            "Descriptive lowercase kebab-case folder slug, "
             "for example subscription-global-analytics."
         ),
     )
@@ -194,7 +144,7 @@ def parse_args() -> argparse.Namespace:
             "goal.html path."
         ),
     )
-    parser.add_argument("goal", help="One-sentence goal.")
+    parser.add_argument("goal", help="Concise goal outcome.")
     return parser.parse_args()
 
 

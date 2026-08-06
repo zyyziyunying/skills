@@ -1,0 +1,6 @@
+interface:
+  display_name: "Independent Verifier"
+  short_description: "Focused review, bug triage, and test design or verification"
+  default_prompt: "Use $independent-verifier to review this target, triage a bug claim, or design or verify behavior-focused tests with proportionate independence."
+policy:
+  allow_implicit_invocation: true

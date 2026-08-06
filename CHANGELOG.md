@@ -8,11 +8,52 @@ All notable changes to this repository will be documented in this file.
 
 - Added `flutter-app-size` for Flutter release artifact measurement, DevTools App Size Tool analysis, size diff evidence, split debug info, obfuscation, asset/package reduction, and iOS App Thinning guidance.
 - Added `humanizer` as a manual-only English prose skill for removing common AI-writing tells while preserving meaning and voice.
-- Added `independent-test-verifier` for no-context test-charter design and
-  test-only verification derived from active goals and authoritative behavior
-  sources rather than the current implementation.
+- Added `independent-verifier` as the single entry for focused review, bug-value
+  triage, test design, and test verification, preferring fresh-context
+  delegation when it adds value.
 
 ### Breaking Changes
+
+- Consolidated `independent-review-subagent`, `independent-test-verifier`, and
+  `review-bug-value` into `independent-verifier`, and removed
+  `expert-agent-team` as a standalone skill.
+  - Affected API/behavior: the four removed install paths and explicit
+    `$skill-name` invocations no longer exist. `$independent-verifier` selects
+    review, bug-value, test-design, or test-verification mode and loads only the
+    corresponding reference. It may also activate from natural-language requests
+    for independent review, bug-value triage, or independent test verification;
+    these requests may now use a verifier subagent when that adds value. General
+    worker delegation uses native runtime capabilities rather than a skill wrapper.
+  - Affected callers: prompts, local discovery links, docs, goal workflows, or
+    automation that invoke any removed skill; callers that expected ordinary
+    multi-agent execution to load `expert-agent-team`; prompt tests or cost
+    assumptions that treated non-`$skill` review requests as direct-only.
+  - Migration: replace independent component invocations with
+    `$independent-verifier` and state the desired mode or bounded outcome. Let
+    `$goal-first-development` route modes for goal-owned delivery. Request
+    bounded subagents directly when parallel execution is needed. Use an explicit
+    direct-review instruction when a verifier subagent is not desired.
+  - Validation/docs: README, `goal-first-development`, skill metadata, and
+    reference routing use the consolidated name. Validate explicit and implicit
+    triggers, direct fallback labeling, changed skill folders, internal links,
+    stale active references, and refreshed local discovery links.
+- Simplified the `$goal-first-development` validation contract.
+  - Affected API/behavior: L1/L2/L3 are now risk guides rather than fixed
+    pipelines. L2 no longer automatically requires an independent check, and L3
+    no longer automatically requires every independent test, final-review, and
+    external-evidence mode. The goal's material risks, project rules, confirmed
+    contract, and best available evidence determine the checks. A missing fresh
+    verifier may fall back to a clearly labeled direct check.
+  - Affected callers: active or generated goal Check sections that encode the
+    former three-gate L2 requirement, and workflows that use a fixed component
+    sequence rather than risk-matched verification.
+  - Migration: keep stricter project-specific gates when authoritative;
+    otherwise replace fixed mode lists with the evidence actually needed for the
+    goal. Label direct verification honestly and preserve any external evidence
+    that the confirmed acceptance contract still requires.
+  - Validation/docs: forward-test L1 mechanical work, L2 behavior and structural
+    changes, unresolved bug claims, and L3 high-risk work; verify that the flow
+    neither invents evidence nor blocks solely because a verifier is unavailable.
 
 - Changed `manage-goal-docs` from a single-file truth-source contract to a
   one-owner-per-fact model rooted at `goal.html`.
@@ -111,42 +152,6 @@ All notable changes to this repository will be documented in this file.
     renamed skill, verify repository discovery, and check that existing
     `SPEC.md`, `TEST.md`, `DESIGN.md`, `GENERATION.md`, `LOCAL.md`, and
     `PACKAGING.md` content remains authoritative during refreshes.
-- Changed `goal-first-development` from a single-flow implementation helper to
-  the canonical owner workflow for risk-based goal delivery.
-  - Affected behavior: active goals now require an explicit L1/L2/L3 validation
-    level, correctness sources, separate developer and independent checks, and
-    decisive evidence appropriate to that level before `done`. L2/L3 work may
-    internally delegate to `expert-agent-team`, `independent-test-verifier`,
-    `independent-review-subagent`, and `review-bug-value`. Active behavior and
-    Check semantics are frozen and cannot be silently weakened by an
-    implementation agent.
-  - Affected callers: prompts and workflows that expect
-    `$goal-first-development` to implement, run developer-authored tests, and
-    immediately mark a behavior-changing or high-risk goal done; manual chains
-    that always invoke `$expert-agent-team` and independent review as separate
-    user-selected phases.
-  - Migration: keep invoking `$goal-first-development`, but normally omit the
-    manual component sequence. Let the owner workflow classify risk and route
-    components. Direct `$expert-agent-team`, `$independent-review-subagent`, and
-    test-skill invocations remain available for standalone bounded work.
-  - Validation/docs: update existing goal Check sections and project `TEST.md`
-    fact sources when they govern active work. Forward-test at least L1
-    mechanical work, L2 bug fixes, L3 high-risk changes, ambiguous product
-    questions, and missing independent-evidence completion gates.
-- Expanded `expert-agent-team`, `independent-review-subagent`, and
-  `review-bug-value` activation contracts to allow internal delegation from an
-  explicitly activated owner workflow.
-  - Affected behavior: these skills are no longer direct-invocation-only when a
-    confirmed owner workflow contract requires their execution or validation.
-  - Affected callers: policies or prompt tests that assume the component skills
-    can never be loaded unless the user repeats their `$skill-name` explicitly.
-  - Migration: treat explicit activation of the owner workflow as authorization
-    for its documented, bounded internal delegation. Standalone implicit use
-    remains disallowed, and each internal skill use must still be announced.
-  - Validation/docs: verify delegated agents preserve no-context review,
-    explicit write ownership, product-code restrictions for test verifiers, and
-    owner-only goal completion.
-
 - Removed `dart-use-pattern-matching` as an independent skill.
   - Affected behavior: `skills/dart-use-pattern-matching` is no longer an installable skill path, and `$dart-use-pattern-matching` is no longer a valid explicit skill invocation.
   - Affected callers: user prompts, local discovery links, docs, scripts, or install commands that reference `dart-use-pattern-matching`.
@@ -182,9 +187,8 @@ All notable changes to this repository will be documented in this file.
 - Kept generated goal page titles semantically complete instead of truncating
   them, and distinguished pending completion gates from achieved validation
   evidence so final review results cannot be asserted before review occurs.
-- Updated `independent-review-subagent` to express no-context forking through
-  current-runtime equivalents such as `fork_turns: "none"` rather than relying
-  on one obsolete API field name.
+- Defined `independent-verifier` no-context forking through current-runtime
+  equivalents such as `fork_turns: "none"` or `fork_context: false`.
 
 ### Fixed
 

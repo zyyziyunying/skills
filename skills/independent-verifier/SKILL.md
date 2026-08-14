@@ -29,6 +29,20 @@ owner workflow's final status.
 Infer the mode and target from the request and available artifacts. Ask only
 when a wrong assumption would materially change the result.
 
+## Choose The Engagement
+
+- Identify the caller's immediate decision and the current lifecycle phase.
+- Use one mode by default. Combine modes only when each answers a distinct
+  question and later work depends on the earlier result.
+- For work spanning implementation phases, complete only the current checkpoint
+  and recommend the next verifier checkpoint; let the owner invoke it again.
+- When the choice is unambiguous, proceed and report the selected mode and
+  shape. Ask first only when the choice materially changes scope, write
+  authority, cost, timing, or the meaning of the result.
+- When delegated, return the conclusion, uncertainty, and recommended next
+  action to the caller. The owner workflow retains lifecycle advancement and
+  final closure.
+
 ## Choose The Verification Shape
 
 - Prefer a fresh subagent without inherited conversation context when a real

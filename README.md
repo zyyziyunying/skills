@@ -61,6 +61,7 @@ npx skills add zyyziyunying/skills --all
 | `patrol-e2e` | Explicit Patrol E2E workflow for Flutter setup, execution, and evidence. |
 | `playwright` | Browser automation through Playwright CLI and wrapper scripts. |
 | `playwright-interactive` | Persistent Playwright browser and Electron debugging. |
+| `r8-analyzer` | Audit Android R8 configuration, analyzer reports, and keep-rule risk. |
 | `screenshot` | Capture desktop or app screenshots when OS-level capture is needed. |
 
 ## Recommended workflow entry

@@ -5,6 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 link_script="$repo_root/scripts/link-local-skills.sh"
 skill_source_dir="$repo_root/skills"
 test_root="$(mktemp -d "${TMPDIR:-/tmp}/link-local-skills-test.XXXXXX")"
+test_root="$(cd -P -- "$test_root" && pwd -P)"
 
 cleanup() {
   rm -rf -- "$test_root"
@@ -45,8 +46,98 @@ LOCAL_SKILL_ROOT="$aliased_local_root" \
 [ ! -L "$aliased_codex_root/stale-skill" ] || \
   fail 'aliased local root left a stale Codex link behind'
 [ "$(readlink "$aliased_codex_root/git-commit-helper")" = \
-  "$aliased_local_root/git-commit-helper" ] || \
-  fail 'Codex link did not preserve the configured local root path'
+  "$aliased_local_real/git-commit-helper" ] || \
+    fail 'Codex link did not canonicalize the configured local root path'
+
+relative_work="$test_root/relative-work"
+mkdir -p "$relative_work"
+(
+  cd "$relative_work"
+  LOCAL_SKILL_ROOT="relative-local" \
+    CODEX_SKILL_ROOT="relative-codex" \
+    "$link_script" >"$test_root/relative-roots.out"
+)
+
+relative_local="$relative_work/relative-local"
+relative_codex="$relative_work/relative-codex"
+[ -e "$relative_codex/git-commit-helper/SKILL.md" ] || \
+  fail 'relative roots produced a broken second-hop Codex link'
+[ "$(readlink "$relative_codex/git-commit-helper")" = \
+  "$relative_local/git-commit-helper" ] || \
+    fail 'relative roots were not canonicalized before linking'
+
+fixture_source="$test_root/fixture-source"
+first_skill='active-a'
+last_skill='active-z'
+stale_skill='stale-skill'
+mkdir -p "$fixture_source/$first_skill" \
+  "$fixture_source/$last_skill" \
+  "$fixture_source/$stale_skill"
+touch "$fixture_source/$first_skill/SKILL.md" \
+  "$fixture_source/$last_skill/SKILL.md"
+
+conflict_local="$test_root/conflict-local"
+conflict_codex="$test_root/conflict-codex"
+mkdir -p "$conflict_local" "$conflict_codex"
+ln -s "$test_root/original-local-target" "$conflict_local/$first_skill"
+ln -s "$test_root/original-codex-target" "$conflict_codex/$first_skill"
+
+stale_source_dir="$fixture_source/$stale_skill"
+ln -s "$stale_source_dir" "$conflict_local/$stale_skill"
+ln -s "$conflict_local/$stale_skill" "$conflict_codex/$stale_skill"
+mkdir "$conflict_codex/$last_skill"
+
+if SKILL_LINK_SOURCE_DIR="$fixture_source" \
+  LOCAL_SKILL_ROOT="$conflict_local" \
+  CODEX_SKILL_ROOT="$conflict_codex" \
+  "$link_script" >"$test_root/conflict.out" 2>&1; then
+  fail 'late non-symlink conflict was accepted'
+fi
+
+grep -Fq 'Refusing to replace non-symlink Codex skill' \
+  "$test_root/conflict.out" || fail 'late conflict failure was not explained'
+[ "$(readlink "$conflict_local/$first_skill")" = \
+  "$test_root/original-local-target" ] || \
+    fail 'late conflict partially replaced an earlier local link'
+[ "$(readlink "$conflict_codex/$first_skill")" = \
+  "$test_root/original-codex-target" ] || \
+    fail 'late conflict partially replaced an earlier Codex link'
+[ -L "$conflict_local/$stale_skill" ] || \
+  fail 'late conflict partially removed a stale local link'
+[ -L "$conflict_codex/$stale_skill" ] || \
+  fail 'late conflict partially removed a stale Codex link'
+
+stale_local="$test_root/stale-local"
+stale_codex="$test_root/stale-codex"
+mkdir -p "$stale_local" "$stale_codex"
+ln -s "$stale_source_dir" "$stale_local/$stale_skill"
+ln -s "$stale_local/$stale_skill" "$stale_codex/$stale_skill"
+unmanaged_source="$test_root/unmanaged-source"
+mkdir "$unmanaged_source"
+ln -s "$unmanaged_source" "$stale_local/unmanaged-skill"
+ln -s "$stale_local/unmanaged-skill" "$stale_codex/unmanaged-skill"
+ln -s "$fixture_source/$first_skill" \
+  "$stale_local/manual-git-alias"
+ln -s "$stale_local/manual-git-alias" \
+  "$stale_codex/manual-git-alias"
+
+SKILL_LINK_SOURCE_DIR="$fixture_source" \
+  LOCAL_SKILL_ROOT="$stale_local" \
+  CODEX_SKILL_ROOT="$stale_codex" \
+  "$link_script" >"$test_root/stale-existing-directory.out"
+
+[ ! -L "$stale_local/$stale_skill" ] || \
+  fail 'source directory without SKILL.md left a stale local link behind'
+[ ! -L "$stale_codex/$stale_skill" ] || \
+  fail 'source directory without SKILL.md left a stale Codex link behind'
+[ -L "$stale_local/unmanaged-skill" ] || \
+  fail 'stale cleanup removed an unmanaged local skill link'
+[ -L "$stale_codex/unmanaged-skill" ] || \
+  fail 'stale cleanup removed an unmanaged Codex skill link'
+[ -L "$stale_local/manual-git-alias" ] || \
+  fail 'stale cleanup removed a valid local alias to a managed skill'
+[ -L "$stale_codex/manual-git-alias" ] || \
+  fail 'stale cleanup removed a valid Codex alias to a managed skill'
 
 local_root="$test_root/local-root"
 codex_root="$test_root/codex-root"
@@ -75,5 +166,10 @@ grep -Fq "Linked $expected_count skills into $codex_root via $local_root" \
   "$test_root/distinct-roots.out" || fail 'distinct-root Codex summary was incorrect'
 
 printf 'PASS: rejected aliased same roots before link mutation\n'
-printf 'PASS: preserved configured root aliases during stale-link cleanup\n'
+printf 'PASS: canonicalized configured root aliases during stale-link cleanup\n'
+printf 'PASS: canonicalized relative roots before creating second-hop links\n'
+printf 'PASS: rejected a late conflict before any link mutation\n'
+printf 'PASS: removed links to a source directory without SKILL.md\n'
+printf 'PASS: preserved valid unmanaged skill links\n'
+printf 'PASS: preserved aliases to current managed skills\n'
 printf 'PASS: linked %s skills across distinct roots\n' "$expected_count"

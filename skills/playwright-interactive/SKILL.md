@@ -15,30 +15,34 @@ Prefer the sibling `playwright` skill for one-shot browser automation from the t
 - If the current tool list does not already expose the `node_repl` `js` tool, use `tool_search` to load it before continuing.
 - Use the `js` tool as the main execution surface.
 - Treat `js_reset` as a recovery tool, not routine cleanup. Resetting the runtime destroys your Playwright handles.
-- Run the JavaScript setup from the same workspace that owns the local `playwright` dependency and, for Electron apps, the local `electron` dependency.
+- Run the JavaScript setup from the workspace that owns the `playwright` dependency and, for Electron apps, the `electron` dependency. This may be the target app or an isolated temporary harness.
 
 ## Preconditions
 
-- Work from the target app workspace, not an unrelated parent directory.
+- Inspect and launch the target app from its workspace. If dependencies live in a temporary harness, keep that harness outside the target repository and point the browser or Electron launch at the target explicitly.
 - Keep any required dev server running in a persistent TTY session.
 - Use short JS cells that do one thing at a time.
 - Reuse top-level bindings instead of redeclaring them.
 
 ## One-time setup
 
-Run these commands from the target workspace:
+Start with a read-only dependency check from the target workspace:
 
 ```bash
-test -f package.json || npm init -y
-npm install playwright
-# Web-only, for headed Chromium or mobile emulation:
-# npx playwright install chromium
-# Electron-only, and only if the target workspace is the app itself:
-# npm install --save-dev electron
 node -e "import('playwright').then(() => console.log('playwright import ok')).catch((error) => { console.error(error); process.exit(1); })"
+# Electron tasks only:
+node -e "import('electron').then(() => console.log('electron import ok')).catch((error) => { console.error(error); process.exit(1); })"
 ```
 
-If you switch to a different workspace later, repeat setup there.
+If the import succeeds, reuse that installation. Do not reinstall it.
+
+If a dependency is missing, do not run `npm init`, `npm install`, or a browser download in the target workspace by default:
+
+1. Reuse a compatible task-owned runtime or dependency installation when one is already available.
+2. Otherwise, when the task already authorizes the required local writes and dependency download, create a task-specific temporary harness outside the target repository, install the dependency there, and attach the JavaScript runtime to that harness. Keep the exact harness path so it can be cleaned up when the task ends.
+3. If the target workspace itself must own the dependency, or the temporary harness cannot satisfy module or Electron resolution, ask the user before changing `package.json`, a lockfile, or `node_modules`. Treat `npx playwright install chromium` as a download and cache mutation that also requires appropriate task authorization.
+
+When switching workspaces, repeat the read-only import check. Never repeat installation automatically.
 
 ## Core workflow
 
@@ -90,7 +94,7 @@ try {
   console.log("Playwright loaded");
 } catch (error) {
   throw new Error(
-    `Could not load playwright from the current node_repl workspace. Run the setup commands from this workspace first. Original error: ${error}`
+    `Could not load playwright from the current node_repl workspace. Run the dependency preflight and use a workspace or authorized temporary harness that owns the dependency. Original error: ${error}`
   );
 }
 ```
@@ -354,8 +358,8 @@ console.log("Playwright session closed");
 
 ## Common failure modes
 
-- `Cannot find module 'playwright'`: run the one-time setup in the current workspace and verify the import before using the JS tool.
-- Playwright package is installed but the browser executable is missing: run `npx playwright install chromium`.
+- `Cannot find module 'playwright'`: repeat the read-only dependency check. Reuse an existing installation or use an authorized temporary harness; do not install into the target workspace by default.
+- Playwright is installed but the browser executable is missing: reuse an available executable, or run `npx playwright install chromium` only when the task authorizes the download and cache mutation.
 - `page.goto: net::ERR_CONNECTION_REFUSED`: make sure the dev server is still running in a persistent TTY session, recheck the port, and prefer `http://127.0.0.1:<port>`.
 - `electron.launch` hangs, times out, or exits immediately: verify the local `electron` dependency, confirm the `args` target, and make sure any renderer dev server is already running before launch.
 - `Identifier has already been declared`: reuse the existing top-level bindings, choose a new name, or wrap the code in `{ ... }`. Use `js_reset` only when the runtime is genuinely stuck.

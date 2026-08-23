@@ -1,7 +1,6 @@
 ---
 name: git-commit-helper
 description: Git 提交助手。当用户要求提交代码、创建 commit 或整理提交时使用；默认规划原子提交边界，必要时拆分为多个 commit。
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git ls-files:*), Bash(git log:*), Bash(git add:*), Bash(git restore:*), Bash(git commit:*)
 ---
 
 # Git 提交助手技能
@@ -14,9 +13,9 @@ allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git ls-files:*), Bash(
 ## 工作流程
 
 ### 安全边界
-- 只允许使用 frontmatter 中列出的 git 子命令。
+- 本技能涉及的 Git 操作仅限 `git status`、`git diff`、`git ls-files`、`git log`、`git add`、`git restore --staged` 和 `git commit`。提交前的验证命令只有在用户任务或项目规则已经授权、且与当前提交直接相关时才可运行；本技能本身不会扩大命令或副作用权限。
 - 不要执行 `git push`、`git reset`、`git clean`、`git checkout`、`git switch`、`git rebase`、`git merge`、`git stash` 等会发布、丢弃、移动或重写用户状态的命令。
-- 不要自动修改远端、分支、历史或未提交的工作区内容；如果需要超出本技能权限的操作，停下并说明原因。
+- 不要自动修改远端、切换分支、重写已有历史或丢弃未提交的工作区内容；用户明确请求创建的 commit 除外。如果需要超出本技能权限的操作，停下并说明原因。
 
 ### 1. 检查工作区
 先判断当前仓库是否适合提交，区分 staged、unstaged、untracked、冲突状态和正在进行的 rebase/merge：
@@ -91,17 +90,20 @@ git diff --cached
 
 ### 5. 执行提交
 
-根据提交计划逐个提交。提交前在不违反项目规则的前提下运行必要的轻量检查，例如静态分析、格式检查或相关测试；如果项目规则禁止构建、运行、模拟器或设备验证，则不要执行这些命令，并在最终说明中明确未运行。
+根据提交计划逐个提交。提交前，只运行用户任务或项目规则已经授权、且与 staged 内容直接相关的必要轻量检查，例如静态分析、格式检查或相关测试。不要把触发本技能视为安装依赖、访问网络、构建产物或运行模拟器/设备的授权；需要新授权时停下说明。无法运行或被项目规则禁止的检查，应在最终说明中明确列出。
 
-每个 commit 都使用 HEREDOC 格式执行：
+把 commit message 作为不经 shell 展开的字面文本传给 Git。不要把生成内容放进未加引号或双引号的 `-m` 参数，也不要使用命令替换、反引号、变量展开或 `eval`；消息可能包含来自文件名、代码或用户输入的 `$()`、反引号、`$VAR` 或单引号。
+
+当执行工具只接受 shell 命令字符串时，优先用带**单引号分隔符**的 HEREDOC 写入 `git commit --file=-`。分隔符必须加单引号，并且不得作为消息中的独立一行出现：
 ```bash
-git commit -m "$(cat <<'EOF'
+git commit --file=- <<'CODEX_COMMIT_MESSAGE_EOF'
 [生成的提交信息主题]
 
 [可选的详细描述]
-EOF
-)"
+CODEX_COMMIT_MESSAGE_EOF
 ```
+
+单引号分隔符会禁止 shell 对消息正文做命令、反引号和变量展开。若运行时提供结构化 argv 或字面 stdin 接口，也可以直接使用；不要自行拼接未经严格 shell escaping 的命令字符串。
 
 如果有多个提交，完成一个 commit 后重新检查剩余 diff，再准备下一个提交边界。
 

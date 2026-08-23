@@ -43,12 +43,23 @@ Use `scripts/convert_to_webp.py` when possible:
 
 ```bash
 <python-with-pillow> <skill-dir>/scripts/convert_to_webp.py --quality 95 --output-mode subdir /path/to/images
+<python-with-pillow> <skill-dir>/scripts/convert_to_webp.py --quality 95 --output-mode subdir /path/to/one.png /another/path/two.jpg
 ```
 
 Output modes:
 
 - `same-dir`: write beside each source
-- `subdir`: write into a `webp` folder under the source directory
+- `subdir`: for a directory input, write into its `webp` folder while preserving
+  the relative tree; for explicit files, write each output into a `webp` folder
+  under that file's parent directory
+
+In `subdir` mode, the script rejects pre-existing symlinks and non-directory
+components within the generated `webp` subtree. A source parent may itself be an
+intentional directory symlink, and an explicitly supplied file symlink keeps its
+lexical parent and filename for output placement.
+
+In either mode, the script rejects an existing output file with multiple hard
+links before conversion so overwriting it cannot mutate another pathname.
 
 ## Output
 

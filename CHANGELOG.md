@@ -11,9 +11,57 @@ All notable changes to this repository will be documented in this file.
 - Added `independent-verifier` as the single entry for focused review, bug-value
   triage, test design, and test verification, preferring fresh-context
   delegation when it adds value.
+- Added a repo-managed `r8-analyzer` that uses current HTML Configuration
+  Analyzer outputs, preserves read-only and build-authorization boundaries, and
+  falls back to an explicitly heuristic audit instead of requiring missing
+  protobuf conversion scripts.
 
 ### Breaking Changes
 
+- Corrected explicit-file `local-image-to-webp --output-mode subdir` placement
+  and made generated output subtrees symlink-safe.
+  - Affected API/behavior: an explicit file now produces
+    `<parent>/webp/<stem>.webp`; the previous implementation ignored `subdir`
+    for files and produced `<parent>/<stem>.webp`. Existing symlinks or
+    non-directory components inside the generated `webp` output subtree are
+    rejected before conversion instead of being followed. Existing output files
+    with multiple hard links are also rejected before conversion.
+  - Affected callers: automation that consumes the former same-directory path
+    despite selecting `subdir`, and local setups that intentionally point a
+    generated `webp` directory or one of its descendants through a symlink, or
+    intentionally reuse an output inode through hard links.
+  - Migration: use `same-dir` to retain same-directory placement, otherwise
+    consume the new `webp` path. Replace a symlinked generated output subtree
+    with a real directory before using `subdir`; preserve or relocate its
+    existing contents first when needed. Replace a hard-linked output pathname
+    with an independent regular file, or remove it so the converter can create
+    one.
+  - Validation/docs: focused tests cover explicit-file placement, lexical file
+    symlinks, output-subtree rejection before writes, collision preflight,
+    single-output hard-link rejection, mixed-success batch reporting, and
+    `same-dir` file-symlink compatibility. Keep the skill's output-mode contract
+    in sync with these paths.
+- Replaced the externally installed, incomplete `r8-analyzer` workflow with the
+  repo-managed HTML-first analyzer contract.
+  - Affected API/behavior: `$r8-analyzer` no longer requires
+    `convert_pb_to_json.py`, `analyze.py`, `tmp/keepradius`, or a strict
+    report-only response. It prefers existing HTML or release evidence, uses the
+    current AGP standalone HTML task only when that Gradle command is authorized,
+    and labels unsupported analysis as heuristic.
+  - Affected callers: prompts or automation that expected protobuf/JSON
+    intermediates, parsed the former fixed report shape, automatically upgraded
+    AGP/R8, or assumed invoking the skill authorized a release build.
+  - Migration: consume the variant's Configuration Analyzer HTML report, pass
+    explicit authority for any Gradle build, and use `flutter-app-size` when the
+    primary outcome is artifact or download-size measurement. Before refreshing
+    local discovery, inspect `r8-analyzer` entries under `~/.agents/skills` and
+    `~/.codex/skills`. Move any existing non-symlink installation to a
+    recoverable backup outside both discovery roots, then run
+    `./scripts/link-local-skills.sh`; the linker intentionally refuses to
+    overwrite non-symlink directories.
+  - Validation/docs: validate frontmatter, README discovery, current official
+    analyzer paths, local symlink refresh, and both quantitative-versus-heuristic
+    reporting boundaries.
 - Consolidated `independent-review-subagent`, `independent-test-verifier`, and
   `review-bug-value` into `independent-verifier`, and removed
   `expert-agent-team` as a standalone skill.
@@ -192,6 +240,26 @@ All notable changes to this repository will be documented in this file.
 
 ### Fixed
 
+- Kept `humanizer` rewrites faithful to the input by prohibiting invented facts,
+  details, sources, experiences, and stance changes, and replaced the Lisbon
+  and Haolai River examples that previously violated that contract.
+- Separated bug validity and confidence from P0-P3 impact in
+  `independent-verifier`, so stale evidence, theoretical reachability,
+  frequency, blast radius, and workarounds affect the correct dimension.
+- Removed the conflicting command contract from `git-commit-helper`: Git
+  mutations remain narrowly allowlisted, project checks inherit existing task
+  authority, and commit messages use literal, non-expanding input without `cat`
+  or command substitution.
+- Made `playwright-interactive` probe dependencies read-only and prefer an
+  authorized temporary harness instead of modifying the target workspace's
+  package files by default.
+- Extended `local-image-to-webp` to accept multiple explicit files, honor
+  per-file `webp` subdirectories, preflight output collisions and aliases,
+  reject unsafe generated output subtrees before writing, and continue later
+  inputs after a per-file output or conversion failure.
+- Canonicalized local skill roots, preflighted all destination conflicts before
+  mutation, and removed stale managed links whose source directory no longer
+  contains `SKILL.md` while preserving valid unmanaged and alias links.
 - Replaced the author-machine command in `manage-goal-docs` with an
   installer-independent `<skill-dir>` invocation resolved from the active
   `SKILL.md` path.

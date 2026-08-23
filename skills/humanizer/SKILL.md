@@ -23,7 +23,7 @@ When given text to humanize:
 
 1. **Identify AI patterns** - Scan for the patterns listed below.
 2. **Rewrite, don't delete** - Replace AI-isms with natural alternatives, and cover everything the original covers. If the original has five paragraphs, the rewrite has five paragraphs.
-3. **Preserve meaning** - Keep the core message intact.
+3. **Preserve meaning and evidence** - Keep the core message intact. Do not add facts, concrete details, sources, experiences, or claims that are not in the input or user-provided context. Do not change the author's stance, sentiment, or level of certainty. If a natural rewrite would require missing detail, stay general instead of inventing it.
 4. **Match the voice** - Fit the intended tone (formal, casual, technical). Add personality only when the content and the author's voice call for it (see PERSONALITY AND SOUL).
 
 The draft → audit → final loop is internal by default. Process and Output defines when to rewrite and what to return.
@@ -68,7 +68,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 ### How to add voice:
 
-**Have opinions.** Don't just report facts - react to them. "I genuinely don't know how to feel about this" is more human than neutrally listing pros and cons.
+**Surface the author's opinions.** When the input already expresses a reaction, uncertainty, or mixed feelings, keep it direct instead of flattening it into neutral summary. Do not manufacture a stance when the input is neutral.
 
 **Vary your rhythm.** Short punchy sentences. Then longer ones that take their time getting where they're going. Mix it up.
 
@@ -77,8 +77,8 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 ### Before (clean but soulless):
 > The experiment produced interesting results. The agents generated 3 million lines of code. Some developers were impressed while others were skeptical. The implications remain unclear.
 
-### After (has a pulse):
-> I genuinely don't know how to feel about this one. 3 million lines of code, generated while the humans presumably slept. Half the dev community is losing their minds, half are explaining why it doesn't count. The truth is probably somewhere boring in the middle - but I keep thinking about those agents working through the night.
+### After (more natural rhythm):
+> The experiment produced interesting results: the agents generated 3 million lines of code. Some developers were impressed. Others were skeptical. The implications remained unclear.
 
 
 ## CONTENT PATTERNS
@@ -93,7 +93,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 > The Statistical Institute of Catalonia was officially established in 1989, marking a pivotal moment in the evolution of regional statistics in Spain. This initiative was part of a broader movement across Spain to decentralize administrative functions and enhance regional governance.
 
 **After:**
-> The Statistical Institute of Catalonia was established in 1989 to collect and publish regional statistics independently from Spain's national statistics office.
+> The Statistical Institute of Catalonia was established in 1989 as part of a broader effort to decentralize administrative functions and strengthen regional governance in Spain.
 
 
 ### 2. Undue Emphasis on Notability and Media Coverage
@@ -106,7 +106,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 > Her views have been cited in The New York Times, BBC, Financial Times, and The Hindu. She maintains an active social media presence with over 500,000 followers.
 
 **After:**
-> In a 2024 New York Times interview, she argued that AI regulation should focus on outcomes rather than methods.
+> Her views have been cited by The New York Times, BBC, Financial Times, and The Hindu. She also has more than 500,000 social media followers.
 
 
 ### 3. Superficial Analyses with -ing Endings
@@ -119,7 +119,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 > The temple's color palette of blue, green, and gold resonates with the region's natural beauty, symbolizing Texas bluebonnets, the Gulf of Mexico, and the diverse Texan landscapes, reflecting the community's deep connection to the land.
 
 **After:**
-> The temple uses blue, green, and gold colors. The architect said these were chosen to reference local bluebonnets and the Gulf coast.
+> The temple uses blue, green, and gold to reference Texas bluebonnets, the Gulf of Mexico, and other Texan landscapes.
 
 
 ### 4. Promotional and Advertisement-like Language
@@ -132,7 +132,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 > Nestled within the breathtaking region of Gonder in Ethiopia, Alamata Raya Kobo stands as a vibrant town with a rich cultural heritage and stunning natural beauty.
 
 **After:**
-> Alamata Raya Kobo is a town in the Gonder region of Ethiopia, known for its weekly market and 18th-century church.
+> Alamata Raya Kobo is a town in Ethiopia's Gonder region with a distinct cultural heritage and surrounding natural landscapes.
 
 
 ### 5. Vague Attributions and Weasel Words
@@ -145,7 +145,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 > Due to its unique characteristics, the Haolai River is of interest to researchers and conservationists. Experts believe it plays a crucial role in the regional ecosystem.
 
 **After:**
-> The Haolai River supports several endemic fish species, according to a 2019 survey by the Chinese Academy of Sciences.
+> The Haolai River's unique characteristics interest researchers and conservationists, and the river may play a crucial role in the regional ecosystem.
 
 
 ### 6. Outline-like "Challenges and Future Prospects" Sections
@@ -158,7 +158,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 > Despite its industrial prosperity, Korattur faces challenges typical of urban areas, including traffic congestion and water scarcity. Despite these challenges, with its strategic location and ongoing initiatives, Korattur continues to thrive as an integral part of Chennai's growth.
 
 **After:**
-> Traffic congestion increased after 2015 when three new IT parks opened. The municipal corporation began a stormwater drainage project in 2022 to address recurring floods.
+> Korattur is an industrial area of Chennai that faces traffic congestion and water scarcity.
 
 
 ## LANGUAGE AND GRAMMAR PATTERNS
@@ -173,7 +173,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 > Additionally, a distinctive feature of Somali cuisine is the incorporation of camel meat. An enduring testament to Italian colonial influence is the widespread adoption of pasta in the local culinary landscape, showcasing how these dishes have integrated into the traditional diet.
 
 **After:**
-> Somali cuisine also includes camel meat, which is considered a delicacy. Pasta dishes, introduced during Italian colonization, remain common, especially in the south.
+> Somali cuisine includes camel meat and pasta, which became widespread under Italian colonial influence.
 
 
 ### 8. Avoidance of "is"/"are" (Copula Avoidance)
@@ -214,7 +214,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 > The event features keynote sessions, panel discussions, and networking opportunities. Attendees can expect innovation, inspiration, and industry insights.
 
 **After:**
-> The event includes talks and panels. There's also time for informal networking between sessions.
+> The event includes keynote talks and panel discussions, with time for networking.
 
 
 ### 11. Elegant Variation (Synonym Cycling)
@@ -236,7 +236,7 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 > Our journey through the universe has taken us from the singularity of the Big Bang to the grand cosmic web, from the birth and death of stars to the enigmatic dance of dark matter.
 
 **After:**
-> The book covers the Big Bang, star formation, and current theories about dark matter.
+> The discussion covers the Big Bang, the cosmic web, the birth and death of stars, and dark matter.
 
 
 ### 13. Passive Voice and Subjectless Fragments
@@ -292,7 +292,7 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > - **Security:** Security has been strengthened with end-to-end encryption.
 
 **After:**
-> The update improves the interface, speeds up load times through optimized algorithms, and adds end-to-end encryption.
+> The update introduces a new interface, improves performance through optimized algorithms, and adds end-to-end encryption.
 
 
 ### 17. Title Case in Headings
@@ -316,7 +316,7 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > ✅ **Next Steps:** Schedule follow-up meeting
 
 **After:**
-> The product launches in Q3. User research showed a preference for simplicity. Next step: schedule a follow-up meeting.
+> The product launches in Q3. Users prefer simplicity. The next step is to schedule a follow-up meeting.
 
 
 ### 19. Curly Quotation Marks
@@ -342,7 +342,7 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > Here is an overview of the French Revolution. I hope this helps! Let me know if you'd like me to expand on any section.
 
 **After:**
-> The French Revolution began in 1789 when financial crisis and food shortages led to widespread unrest.
+> [Start directly with the French Revolution overview.]
 
 
 ### 21. Knowledge-Cutoff Disclaimers and Speculative Gap-Filling
@@ -355,7 +355,7 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > While specific details about the company's founding are not extensively documented in readily available sources, it appears to have been established sometime in the 1990s.
 
 **After:**
-> The company was founded in 1994, according to its registration documents.
+> Available sources do not confirm the exact date, but the company appears to have been founded in the 1990s.
 
 **Before (speculative gap-fill):**
 > Information about her early life is not publicly available, suggesting she maintains a low profile and keeps personal details private. She likely grew up in a middle-class household, which shaped her later interest in education reform.
@@ -407,7 +407,7 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > The future looks bright for the company. Exciting times lie ahead as they continue their journey toward excellence. This represents a major step in the right direction.
 
 **After:**
-> The company plans to open two more locations next year.
+> [Replace this generic conclusion with a concrete plan or result already supported by the text. If none exists, omit it.]
 
 
 ### 26. Hyphenated Word Pair Overuse
@@ -433,7 +433,7 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > The real question is whether teams can adapt. At its core, what really matters is organizational readiness.
 
 **After:**
-> The question is whether teams can adapt. That mostly depends on whether the organization is ready to change its habits.
+> Whether teams can adapt depends on the organization's readiness.
 
 
 ### 28. Signposting and Announcements
@@ -446,7 +446,7 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > Let's dive into how caching works in Next.js. Here's what you need to know.
 
 **After:**
-> Next.js caches data at multiple layers, including request memoization, the data cache, and the router cache.
+> [Start directly with the existing explanation of how caching works in Next.js.]
 
 
 ### 29. Fragmented Headers
@@ -476,7 +476,7 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > This function was added to replace the previous approach of iterating through all items, which caused O(n²) performance.
 
 **After:**
-> This function uses a hash map for O(1) lookups, avoiding the O(n²) cost of naive iteration.
+> This function avoids the O(n²) cost of iterating through all items.
 
 
 ### 31. Manufactured Punchlines and Staccato Drama
@@ -487,7 +487,7 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > Then AlphaEvolve arrived. It had no preference for symmetry. No aesthetic prior. No nostalgia for human taste. The old rules were gone.
 
 **After:**
-> AlphaEvolve changed the search because it did not favor symmetry or human-looking designs. That made some of the older assumptions less useful.
+> AlphaEvolve did not favor symmetry or human-looking designs, so the old rules no longer applied.
 
 
 ### 32. Aphorism Formulas
@@ -500,7 +500,7 @@ Before returning the final rewrite, scan it for `—` and `–`. Any hit means t
 > Symmetry is the language of trust. Efficiency becomes a trap when teams forget the human layer.
 
 **After:**
-> Symmetric layouts often feel more predictable to users. Teams can over-optimize workflows and miss how people actually use them.
+> People often associate symmetry with trust. Efficiency can become harmful when teams ignore the human side of their work.
 
 
 ### 33. Conversational Rhetorical Openers
@@ -558,9 +558,10 @@ When you see these, lean toward leaving the prose alone — they are evidence of
 
 1. Read the input carefully and check whether AI tells appear in clusters. Do not rewrite quotations, titles, proper names, code, or examples where watched phrases are being discussed rather than used.
 2. If the input has only isolated false-positive signals, make the smallest useful edit or say that no humanization is needed. Do not force a full rewrite.
-3. When a rewrite is warranted, write a **draft rewrite**. Check that it reads naturally aloud, varies sentence length, prefers specific details and simple constructions (is/are/has), and keeps the appropriate register.
+3. When a rewrite is warranted, write a **draft rewrite**. Check that it reads naturally aloud, varies sentence length, prefers the input's specific details and simple constructions (is/are/has), and keeps the appropriate register.
 4. Internally ask: **"What makes the below so obviously AI generated?"** Answer briefly with any remaining tells.
-5. Revise into a **final rewrite** that addresses them and contains no em or en dashes (see §14).
+5. Compare the draft with the input. Remove any new fact, detail, source, experience, or claim, and restore any stance, sentiment, or uncertainty that drifted.
+6. Revise into a **final rewrite** that addresses the remaining tells and contains no em or en dashes (see §14).
 
 Deliver only the final rewrite by default. Include the draft, the brief "still-AI" bullets, or a short summary of changes only when the user asks for them.
 
@@ -581,35 +582,37 @@ Deliver only the final rewrite by default. Include the draft, the brief "still-A
 > Would I go back? Absolutely. Lisbon isn't just a place to visit — it's a place to fall in love with, again and again. If you're dreaming of your next getaway, this is one destination that promises memories to last a lifetime. ✨
 
 **Draft rewrite:**
-> I spent five days in Lisbon last October and I am still a little split on it. The city is beautiful, but it is also more tiring than I expected.
+> I spent five days in Lisbon recently and loved it from the start. The city made an impression right away.
 >
-> The hills are not a detail. My hotel was in Alfama, which looked great in photos and meant I had to climb a long staircase every time I wanted coffee. By the second day I was planning walks around which direction went downhill.
+> Lisbon sits along the Tagus River, where its history and modern energy meet. The hills made my legs ache, but the view from each climb made the effort worth it.
 >
-> I rode Tram 28 because everyone says to ride Tram 28. It was crowded, slow, and mostly full of people filming the same corners. The pastries were better. I had a warm custard tart in Graça that was worth the hype.
+> I rode Tram 28 through the historic neighborhoods and had a warm pastel de nata at Pastéis de Belém. I still remember the pastry.
 >
-> The part I liked most was away from the main squares: laundry, tile, open windows, and people watching football in small cafes. The castle view was good, but the line was too long for what it was.
+> A few steps from the main squares, the city becomes quieter. The sunlit alleys, tiled facades, and locals going about their days invite a slower pace.
 >
-> I would go back, but in spring and with better shoes.
+> São Jorge Castle has great views over the rooftops. The queue can be long, but the view is worth waiting for.
+>
+> I would go back. Lisbon was easy to love, and I left with memories I expect to keep.
 
 **What makes the below so obviously AI generated?**
-- The draft is too compressed compared with the original; it drops texture instead of rewriting it.
-- Some sentences still explain the point too cleanly ("The city is beautiful, but...").
-- The closer is flat and generic rather than a real ending in the same voice.
+- The draft still relies on generic travel language such as "made an impression" and "history and modern energy meet."
+- Several sentences have the same even rhythm.
+- The closer repeats the positive sentiment without much of the original voice.
 
 **Now make it not obviously AI generated.**
-> I spent five days in Lisbon last October and still have mixed feelings about it. Beautiful, yes. Also harder on the knees than anyone warned me.
+> I spent five days in Lisbon recently and loved it from the start. It felt special as soon as I arrived.
 >
-> The hills are the whole story and somehow never make the brochures. My hotel was up in Alfama, which photographs beautifully and translates, in practice, to climbing what felt like a six-story staircase every time I wanted coffee. By the second day my calves had opinions. I started planning each walk around which way was downhill, which is a strange way to see a city but probably an honest one.
+> Lisbon runs along the Tagus River, with its history and modern energy side by side. The hills are hard on the legs, but the views made every climb feel worth it.
 >
-> Everyone says to ride Tram 28, so I did, wedged against a stranger's backpack for forty minutes while three tour groups filmed the same corner. I would walk the route next time, or go before breakfast. The custard tarts, though, earn the fuss. I had one at a plain little place in Graça, still warm, and for about thirty seconds I understood why people build trips around pastry.
+> I rode Tram 28 through the historic neighborhoods, then had a warm pastel de nata at Pastéis de Belém. I still remember that warm pastry.
 >
-> What I did not expect was how quiet the city gets away from the main squares. Two blocks uphill from any plaza it turns into laundry lines, chipped tile, open windows, and old men watching football with the sound turned up. That is the Lisbon I keep thinking about, not the castle.
+> A few steps from the main squares, Lisbon quiets down into sunlit alleys, tiled facades, and locals going about their day. That side of the city invites a slower pace.
 >
-> The castle is fine. The view is great, the queue is long, and I spent more time shuffling toward the entrance than looking at anything once I got inside. If I had only two days, I would trade it for an afternoon of getting lost.
+> São Jorge Castle looks out over the rooftops. The queue can be long, but the view is worth the wait for history buffs and curious travelers.
 >
-> I would go back, but in spring and with better shoes. Lisbon does not bend over backward to make things easy for you. I think I liked that, even when my legs disagreed.
+> I would go back without hesitation. Lisbon is easy to love, and my five days there gave me memories I expect to keep for a long time.
 
-**Changes made:** Kept the first-person travel recap and roughly the same level of detail, but removed the chatbot framing, significance inflation, promotional language, forced enthusiasm, em dashes, rule-of-three cadence, generic upbeat conclusion, and emoji. Rebuilt the piece around concrete friction, mixed feelings, uneven rhythm, and specific scenes.
+**Changes made:** Kept the original facts and positive stance while removing the chatbot framing, significance inflation, promotional language, em dashes, rule-of-three cadence, generic conclusion, and emoji. No dates, locations, experiences, sources, or opinions were added.
 
 
 ## Reference

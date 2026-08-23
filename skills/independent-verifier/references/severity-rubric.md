@@ -3,10 +3,13 @@
 Use P labels for harm when the issue occurs; keep scheduling priority separate
 unless the project explicitly defines P labels as priority.
 
-Calibrate against project facts. Raise confidence for violations of a core
+Calibrate each dimension against project facts. Unsupported or artificially
+constructed claims should lower confidence or change the verdict. A reproduced
+flag-gated or migration-only bug can still be high confidence; account for the
+gate and affected audience in reachability and blast radius. Deferred status
+changes scheduling, not impact severity. Violations of a reachable core
 workflow, API contract, data-integrity rule, security/privacy rule, or release
-goal. Lower confidence for unsupported, deferred, flag-gated, migration-only,
-or artificially constructed states.
+goal can support a higher impact label.
 
 ## P0
 
@@ -33,5 +36,9 @@ Low impact: cosmetic mismatch, non-blocking edge case, internal inconvenience,
 or a rare issue with a simple workaround. It may still be worth fixing when the
 change is small, safe, and adjacent to current work.
 
-Downgrade labels based only on stale tests, invalid fixtures, theoretical
-reachability, developer inconvenience, or a feature request presented as a bug.
+Classify validity and confidence before severity. A stale test, invalid fixture,
+unreachable path, or feature request presented as a bug should change the
+verdict or confidence rather than receive an inflated P label. For confirmed or
+likely bugs, choose P0-P3 from the actual harm, reachability, blast radius,
+frequency, and available workaround. Developer inconvenience or a simple
+workaround usually supports P3 unless stronger user impact is evidenced.

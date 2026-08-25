@@ -18,6 +18,15 @@ All notable changes to this repository will be documented in this file.
 
 ### Breaking Changes
 
+- Removed `patrol-e2e` as an installable skill.
+  - Affected API/behavior: `skills/patrol-e2e` and the explicit
+    `$patrol-e2e` invocation no longer exist.
+  - Affected callers: prompts, local discovery links, docs, or automation that
+    reference the removed skill.
+  - Migration: use the target project's current testing instructions and obtain
+    the required explicit authority before running Patrol or device commands.
+  - Validation/docs: README no longer lists the skill. Refresh local discovery
+    links with `./scripts/link-local-skills.sh` to remove managed stale links.
 - Corrected explicit-file `local-image-to-webp --output-mode subdir` placement
   and made generated output subtrees symlink-safe.
   - Affected API/behavior: an explicit file now produces

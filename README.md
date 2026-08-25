@@ -58,7 +58,6 @@ npx skills add zyyziyunying/skills --all
 | `independent-verifier` | Focused review, bug triage, test design, and test verification with proportionate independence. |
 | `local-image-to-webp` | Convert local images to WebP while preserving originals. |
 | `manage-goal-docs` | Create and maintain goal folders with a concise `goal.html` overview and clearly owned scoped documents. |
-| `patrol-e2e` | Explicit Patrol E2E workflow for Flutter setup, execution, and evidence. |
 | `playwright` | Browser automation through Playwright CLI and wrapper scripts. |
 | `playwright-interactive` | Persistent Playwright browser and Electron debugging. |
 | `r8-analyzer` | Audit Android R8 configuration, analyzer reports, and keep-rule risk. |

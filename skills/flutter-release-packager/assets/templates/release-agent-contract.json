@@ -1,8 +1,15 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "projectKind": "flutter-app",
   "versionSource": "pubspec.yaml version",
   "dirtyWorktreePolicy": "block-store-release",
+  "gitIdentity": {
+    "requiresNamedBranch": true,
+    "requiresCleanWorktree": true,
+    "tagPushRequired": false,
+    "pushTagsAutomatically": false,
+    "requiresSeparatePushConfirmation": true
+  },
   "stripEnvironmentPrefixes": [],
   "releaseConsole": {
     "startCommand": [
@@ -19,6 +26,23 @@
     "buildEndpoint": "/api/build",
     "jobEndpoint": "/api/jobs/{id}",
     "cancelEndpoint": "/api/jobs/{id}/cancel"
+  },
+  "releaseRecords": {
+    "draftLabels": [
+      "Release record"
+    ],
+    "tagCommand": [
+      "dart",
+      "run",
+      "tool/release_records.dart",
+      "tag"
+    ],
+    "appendCommand": [
+      "dart",
+      "run",
+      "tool/release_records.dart",
+      "append"
+    ]
   },
   "secretRedaction": {
     "environmentPrefixes": [
@@ -53,6 +77,8 @@
       "artifactType": "AAB",
       "audience": "Google Play release",
       "storeLike": true,
+      "releaseLine": "store",
+      "branchTemplate": "release/store/android/<version>",
       "command": [
         "./tool/build_android_release_aab.sh"
       ],
@@ -64,10 +90,6 @@
       ],
       "requiredEnvFiles": [
         "assets/env/release.env"
-      ],
-      "allowedOptions": [
-        "analyticsEnabled",
-        "crashlyticsEnabled"
       ],
       "options": [
         {
@@ -93,6 +115,14 @@
       },
       "evidence": {
         "requiredForSuccess": true,
+        "requiredLabelGroups": [
+          "artifactLabels",
+          "flutterOutputLabels",
+          "manifestLabels",
+          "symbolLabels",
+          "artifactsDirLabels",
+          "releaseRecordLabels"
+        ],
         "artifactLabels": [
           "AAB"
         ],
@@ -107,6 +137,9 @@
         ],
         "artifactsDirLabels": [
           "Artifacts"
+        ],
+        "releaseRecordLabels": [
+          "Release record"
         ]
       }
     },
@@ -117,6 +150,8 @@
       "artifactType": "IPA",
       "audience": "App Store Connect",
       "storeLike": true,
+      "releaseLine": "store",
+      "branchTemplate": "release/store/ios/<version>",
       "command": [
         "./tool/build_ios_app_store_ipa.sh"
       ],
@@ -126,13 +161,6 @@
       ],
       "requiredEnvFiles": [
         "assets/env/release.env"
-      ],
-      "allowedOptions": [
-        "exportParentDir",
-        "uploadAfterBuild",
-        "uploadWait",
-        "analyticsEnabled",
-        "crashlyticsEnabled"
       ],
       "options": [
         {
@@ -184,6 +212,14 @@
       },
       "evidence": {
         "requiredForSuccess": true,
+        "requiredLabelGroups": [
+          "artifactLabels",
+          "flutterOutputLabels",
+          "manifestLabels",
+          "symbolLabels",
+          "artifactsDirLabels",
+          "releaseRecordLabels"
+        ],
         "artifactLabels": [
           "IPA"
         ],
@@ -199,6 +235,9 @@
         ],
         "artifactsDirLabels": [
           "Artifacts"
+        ],
+        "releaseRecordLabels": [
+          "Release record"
         ],
         "uploadStatusLabels": [
           "Upload to App Store Connect"

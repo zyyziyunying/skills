@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import os
 import re
@@ -21,7 +22,7 @@ from typing import Any
 
 DEFAULT_CONTRACT_PATH = "tool/release_console/agent-contract.json"
 REDACTION_MARKER = "<redacted>"
-SUPPORTED_SCHEMA_VERSION = 1
+SUPPORTED_SCHEMA_VERSIONS = {1, 2}
 DIRTY_POLICIES = {"block", "block-store-release", "warn", "allow"}
 UPLOAD_TRIGGER_FALLBACK = ("uploadAfterBuild", "iosUploadAfterBuild", "upload")
 DEFAULT_STARTUP_URL_PATTERN = r"Release console:\s+(\S+)"
@@ -72,6 +73,13 @@ def require_string_list(
     return [str(item) for item in value]
 
 
+def require_command(value: Any, field_name: str) -> list[str]:
+    command = require_string_list(value, field_name, required=True)
+    if not command or any(not item for item in command):
+        raise SystemExit(f"{field_name} must be a non-empty command array")
+    return command
+
+
 def validate_startup_url_pattern(contract: dict[str, Any]) -> None:
     release_console = contract.get("releaseConsole")
     if not isinstance(release_console, dict):
@@ -111,9 +119,11 @@ def parse_startup_console_url(value: Any) -> urllib.parse.ParseResult:
 
 
 def validate_contract(contract: dict[str, Any]) -> None:
-    if contract.get("schemaVersion") != SUPPORTED_SCHEMA_VERSION:
+    schema_version = contract.get("schemaVersion")
+    if schema_version not in SUPPORTED_SCHEMA_VERSIONS:
         raise SystemExit(
-            f"release agent contract schemaVersion must be {SUPPORTED_SCHEMA_VERSION}"
+            "release agent contract schemaVersion must be one of: "
+            + ", ".join(str(value) for value in sorted(SUPPORTED_SCHEMA_VERSIONS))
         )
     policy = contract.get("dirtyWorktreePolicy")
     if policy not in DIRTY_POLICIES:
@@ -137,6 +147,18 @@ def validate_contract(contract: dict[str, Any]) -> None:
         seen.add(target_id)
         if not isinstance(target.get("storeLike"), bool):
             raise SystemExit(f"target {target_id} must define boolean storeLike")
+        for field in ("platform", "releaseLine", "branchTemplate"):
+            value = target.get(field)
+            if schema_version == 2 and (not isinstance(value, str) or not value):
+                raise SystemExit(f"target {target_id} must define non-empty {field}")
+            if value is not None and (not isinstance(value, str) or not value):
+                raise SystemExit(f"target {target_id}.{field} must be a non-empty string")
+        if schema_version == 2:
+            require_command(target.get("command"), f"target {target_id}.command")
+            if not isinstance(target.get("options"), list):
+                raise SystemExit(f"target {target_id} must define options")
+        elif "command" in target:
+            require_command(target.get("command"), f"target {target_id}.command")
         for key in ("requiredFiles", "requiredEnvFiles"):
             if key in target:
                 require_string_list(
@@ -147,7 +169,42 @@ def validate_contract(contract: dict[str, Any]) -> None:
         allowed_option_names(target)
         require_string_list(target.get("forbiddenOptions"), f"target {target_id}.forbiddenOptions")
         validate_upload_schema(target)
-        validate_evidence_schema(target)
+        validate_evidence_schema(target, schema_version=schema_version)
+    records = contract.get("releaseRecords")
+    if records is not None:
+        if not isinstance(records, dict):
+            raise SystemExit("releaseRecords must be an object")
+        require_command(records.get("tagCommand"), "releaseRecords.tagCommand")
+        require_command(records.get("appendCommand"), "releaseRecords.appendCommand")
+        require_string_list(records.get("draftLabels"), "releaseRecords.draftLabels", required=True)
+        identity = contract.get("gitIdentity")
+        if not isinstance(identity, dict):
+            raise SystemExit("releaseRecords requires gitIdentity")
+        if identity.get("requiresNamedBranch") is not True:
+            raise SystemExit("releaseRecords requires a named Git branch")
+        if identity.get("requiresCleanWorktree") is not True:
+            raise SystemExit("releaseRecords requires a clean Git worktree")
+        if identity.get("tagPushRequired") is True:
+            push_command = require_command(
+                records.get("pushCommand"),
+                "releaseRecords.pushCommand",
+            )
+            tag_remote = identity.get("tagRemote")
+            if not isinstance(tag_remote, str) or not tag_remote:
+                raise SystemExit("required tag push must define gitIdentity.tagRemote")
+            if not any(
+                push_command[index] == "--remote"
+                and index + 1 < len(push_command)
+                and push_command[index + 1] == tag_remote
+                for index in range(len(push_command))
+            ):
+                raise SystemExit(
+                    "releaseRecords.pushCommand must use gitIdentity.tagRemote"
+                )
+            if identity.get("pushTagsAutomatically") is not False:
+                raise SystemExit("required tag push must not run automatically")
+            if identity.get("requiresSeparatePushConfirmation") is not True:
+                raise SystemExit("required tag push needs separate confirmation")
 
 
 def target_by_id(contract: dict[str, Any], target_id: str) -> dict[str, Any]:
@@ -162,7 +219,7 @@ def target_by_id(contract: dict[str, Any], target_id: str) -> dict[str, Any]:
 
 def git_status_short(project: Path, *, fail_closed: bool = False) -> list[str]:
     result = subprocess.run(
-        ["git", "status", "--short"],
+        ["git", "status", "--short", "--untracked-files=all"],
         cwd=project,
         check=False,
         capture_output=True,
@@ -385,7 +442,11 @@ def effective_option_value(target: dict[str, Any], payload: dict[str, Any], key:
     return schema.get("default")
 
 
-def validate_evidence_schema(target: dict[str, Any]) -> None:
+def validate_evidence_schema(
+    target: dict[str, Any],
+    *,
+    schema_version: int,
+) -> None:
     evidence = target.get("evidence", {})
     if evidence is None:
         return
@@ -402,6 +463,33 @@ def validate_evidence_schema(target: dict[str, Any]) -> None:
     for key, value in evidence.items():
         if key.endswith("Labels"):
             require_string_list(value, f"target {target.get('id', '<unknown>')}.evidence.{key}")
+    required_groups = require_string_list(
+        evidence.get("requiredLabelGroups"),
+        f"target {target.get('id', '<unknown>')}.evidence.requiredLabelGroups",
+        required=(
+            schema_version == 2 and evidence.get("requiredForSuccess") is True
+        ),
+    )
+    if (
+        schema_version == 2
+        and evidence.get("requiredForSuccess") is True
+        and not required_groups
+    ):
+        raise SystemExit(
+            f"target {target.get('id', '<unknown>')}.evidence.requiredLabelGroups "
+            "must not be empty"
+        )
+    for group in required_groups:
+        labels = require_string_list(
+            evidence.get(group),
+            f"target {target.get('id', '<unknown>')}.evidence.{group}",
+            required=True,
+        )
+        if not group.endswith("Labels") or not labels:
+            raise SystemExit(
+                f"target {target.get('id', '<unknown>')}.evidence required group "
+                f"is invalid: {group}"
+            )
 
 
 def validate_upload_schema(target: dict[str, Any]) -> None:
@@ -575,6 +663,13 @@ def print_status(status: dict[str, Any], project: Path, contract: dict[str, Any]
     print("Branch:", redact(str(status.get("branch", "-")), contract))
     print("Commit:", redact(str(status.get("commit", "-")), contract))
     print("Version:", redact(str(status.get("pubspecVersion", "-")), contract))
+    print("History eligible:", status.get("historyEligible") is True)
+    eligible_targets = status.get("historyEligibleTargets", [])
+    if isinstance(eligible_targets, list) and eligible_targets:
+        print(
+            "History-eligible targets:",
+            ", ".join(redact(str(item), contract) for item in eligible_targets),
+        )
     dirty_files = git_status_short(project)
     print("Dirty count:", len(dirty_files) if dirty_files else status.get("dirtyCount", 0))
     if dirty_files:
@@ -711,7 +806,6 @@ def enforce_dirty_policy(
     contract: dict[str, Any],
     target: dict[str, Any],
     project: Path,
-    allow_dirty: bool,
 ) -> None:
     policy = str(contract.get("dirtyWorktreePolicy"))
     dirty_files = git_status_short(project, fail_closed=policy != "allow")
@@ -727,12 +821,110 @@ def enforce_dirty_policy(
     should_block = policy == "block" or (
         policy == "block-store-release" and target.get("storeLike") is True
     )
-    if should_block and not allow_dirty:
+    if should_block:
         raise SystemExit(
-            "refusing release with dirty worktree; use --allow-dirty only after "
-            f"explicit confirmation:\n  {joined}"
+            f"refusing release under {policy} dirty-worktree policy:\n  {joined}"
         )
-    print(f"Proceeding with explicitly accepted dirty worktree:\n  {joined}")
+    print(f"Dirty worktree detected; non-store target may continue:\n  {joined}")
+
+
+def _git_text(project: Path, arguments: list[str], label: str) -> str:
+    result = subprocess.run(
+        ["git", *arguments],
+        cwd=project,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "unknown error"
+        raise SystemExit(f"unable to inspect {label} before build: {detail}")
+    return result.stdout.strip()
+
+
+def _pubspec_version(project: Path, contract: dict[str, Any]) -> str:
+    if contract.get("versionSource") != "pubspec.yaml version":
+        raise SystemExit(
+            "exact <version> branch validation requires versionSource "
+            "to be 'pubspec.yaml version'"
+        )
+    pubspec = project / "pubspec.yaml"
+    if not pubspec.is_file():
+        raise SystemExit("pubspec.yaml is required for exact release branch validation")
+    for line in pubspec.read_text(encoding="utf-8").splitlines():
+        if line.startswith("version:"):
+            version = line.removeprefix("version:").strip()
+            if version:
+                return version
+    raise SystemExit("pubspec.yaml does not define a release version")
+
+
+def _branch_template_pattern(
+    template: str,
+    *,
+    project: Path,
+    contract: dict[str, Any],
+    target: dict[str, Any],
+) -> re.Pattern[str]:
+    parts = re.split(r"(<[^>]+>)", template)
+    pattern: list[str] = []
+    for part in parts:
+        if not part:
+            continue
+        if part == "<version>":
+            pattern.append(re.escape(_pubspec_version(project, contract)))
+        elif part == "<platform>":
+            pattern.append(re.escape(str(target.get("platform", ""))))
+        elif part == "<target>":
+            pattern.append(re.escape(str(target.get("id", ""))))
+        elif part == "<yyyy-mm-dd>":
+            pattern.append(r"(?P<release_date>\d{4}-\d{2}-\d{2})")
+        elif part.startswith("<") and part.endswith(">"):
+            raise SystemExit(f"unsupported release branch placeholder: {part}")
+        else:
+            pattern.append(re.escape(part))
+    return re.compile("^" + "".join(pattern) + "$")
+
+
+def enforce_git_identity(
+    contract: dict[str, Any],
+    target: dict[str, Any],
+    project: Path,
+) -> None:
+    identity = contract.get("gitIdentity")
+    if not isinstance(identity, dict):
+        return
+    branch = _git_text(project, ["branch", "--show-current"], "Git branch")
+    if identity.get("requiresNamedBranch") is True and not branch:
+        raise SystemExit("release packaging requires a named Git branch")
+    if identity.get("requiresCleanWorktree") is True:
+        dirty_files = git_status_short(project, fail_closed=True)
+        if dirty_files:
+            joined = "\n  ".join(redact(line, contract) for line in dirty_files)
+            raise SystemExit(
+                "release packaging requires a clean Git worktree:\n  " + joined
+            )
+    template = target.get("branchTemplate")
+    if not isinstance(template, str) or not template:
+        return
+    match = _branch_template_pattern(
+        template,
+        project=project,
+        contract=contract,
+        target=target,
+    ).fullmatch(branch)
+    if match is None:
+        raise SystemExit(
+            f"release branch {branch!r} does not match target template {template!r}"
+        )
+    release_date = match.groupdict().get("release_date")
+    if release_date is not None:
+        try:
+            datetime.date.fromisoformat(release_date)
+        except ValueError as error:
+            raise SystemExit(
+                f"release branch contains an invalid calendar date: {release_date}"
+            ) from error
 
 
 def run_build(args: argparse.Namespace) -> int:
@@ -745,7 +937,8 @@ def run_build(args: argparse.Namespace) -> int:
     validate_options(target, options)
     validate_required_files(project, target)
     payload = {"target": args.target, **options}
-    enforce_dirty_policy(contract, target, project, args.allow_dirty)
+    enforce_git_identity(contract, target, project)
+    enforce_dirty_policy(contract, target, project)
 
     requested_upload = validate_upload_request(target, payload)
     if requested_upload and not args.confirm_upload:
@@ -774,14 +967,24 @@ def run_build(args: argparse.Namespace) -> int:
             if job.get("running") is False:
                 exit_code = int(job.get("exitCode", 1) or 0)
                 evidence_found = print_evidence(previous_logs, target, contract)
+                missing_evidence = missing_required_evidence_groups(
+                    target,
+                    evidence_found,
+                    schema_version=int(contract["schemaVersion"]),
+                )
                 if (
                     exit_code == 0
-                    and target.get("storeLike") is True
                     and evidence_required(target)
-                    and not evidence_found
+                    and missing_evidence
                 ):
-                    print("Release evidence: required labels were not found", file=sys.stderr)
+                    print(
+                        "Release evidence: missing required groups: "
+                        + ", ".join(missing_evidence),
+                        file=sys.stderr,
+                    )
                     return 1
+                if exit_code == 0:
+                    print_pending_release_record(previous_logs, contract)
                 return exit_code
             time.sleep(args.poll_interval)
             job = console.request_json(
@@ -824,7 +1027,7 @@ def print_evidence(
     logs: list[str],
     target: dict[str, Any],
     contract: dict[str, Any],
-) -> bool:
+) -> set[str]:
     evidence_config = target.get("evidence", {})
     labels: list[str] = []
     if isinstance(evidence_config, dict):
@@ -837,20 +1040,51 @@ def print_evidence(
                     )
                 )
     if not labels:
-        return False
+        return set()
     found: dict[str, str] = {}
     for line in logs:
         for label in labels:
             prefix = f"{label}:"
             if line.startswith(prefix):
-                found[label] = line[len(prefix) :].strip()
+                value = line[len(prefix) :].strip()
+                if value:
+                    found[label] = value
     if not found:
         print("Release evidence: none found in final logs")
-        return False
+        return set()
     print("Release evidence:")
     for label, value in found.items():
         print(f"  {label}: {redact(value, contract)}")
-    return True
+    return set(found)
+
+
+def missing_required_evidence_groups(
+    target: dict[str, Any],
+    found_labels: set[str],
+    *,
+    schema_version: int = 2,
+) -> list[str]:
+    evidence = target.get("evidence", {})
+    if not isinstance(evidence, dict):
+        return ["evidence"]
+    required = evidence.get("requiredForSuccess") is True
+    groups = require_string_list(
+        evidence.get("requiredLabelGroups"),
+        f"target {target.get('id', '<unknown>')}.evidence.requiredLabelGroups",
+        required=schema_version == 2 and required,
+    )
+    if schema_version == 1 and required and not groups:
+        return [] if found_labels else ["evidence"]
+    missing: list[str] = []
+    for group in groups:
+        labels = require_string_list(
+            evidence.get(group),
+            f"target {target.get('id', '<unknown>')}.evidence.{group}",
+            required=True,
+        )
+        if not any(label in found_labels for label in labels):
+            missing.append(group)
+    return missing
 
 
 def evidence_required(target: dict[str, Any]) -> bool:
@@ -859,6 +1093,83 @@ def evidence_required(target: dict[str, Any]) -> bool:
         "requiredForSuccess",
         False,
     ) is True
+
+
+def print_pending_release_record(logs: list[str], contract: dict[str, Any]) -> None:
+    records = contract.get("releaseRecords")
+    if not isinstance(records, dict):
+        return
+    labels = require_string_list(
+        records.get("draftLabels"),
+        "releaseRecords.draftLabels",
+        required=True,
+    )
+    for line in reversed(logs):
+        for label in labels:
+            prefix = f"{label}:"
+            if line.startswith(prefix):
+                value = redact(line[len(prefix) :].strip(), contract)
+                print(f"Release record draft pending review: {value}")
+                print("Run the record command only after explicit record confirmation.")
+                return
+
+
+def run_contract_command(
+    project: Path,
+    contract: dict[str, Any],
+    command_key: str,
+    event_file: Path,
+) -> None:
+    records = contract.get("releaseRecords")
+    if not isinstance(records, dict):
+        raise SystemExit("project contract does not define releaseRecords")
+    command = require_command(records.get(command_key), f"releaseRecords.{command_key}")
+    result = subprocess.run(
+        [*command, "--event-file", str(event_file)],
+        cwd=project,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.stdout:
+        print(redact(result.stdout.rstrip(), contract))
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "unknown error"
+        raise SystemExit(
+            f"releaseRecords.{command_key} failed: {redact(detail, contract)}"
+        )
+
+
+def resolve_event_file(value: str) -> Path:
+    event_file = Path(value).expanduser().resolve()
+    if not event_file.is_file():
+        raise SystemExit(f"release record draft not found: {event_file}")
+    return event_file
+
+
+def run_record(args: argparse.Namespace) -> int:
+    if not args.confirm_record:
+        raise SystemExit("refusing tag/append without --confirm-record")
+    project = Path(args.project).expanduser().resolve()
+    contract = load_contract(project, args.contract)
+    event_file = resolve_event_file(args.event_file)
+    run_contract_command(project, contract, "tagCommand", event_file)
+    run_contract_command(project, contract, "appendCommand", event_file)
+    print("Release record completed locally; required remote tag push is still pending.")
+    return 0
+
+
+def run_push_tag(args: argparse.Namespace) -> int:
+    if not args.confirm_push:
+        raise SystemExit("refusing remote tag push without --confirm-push")
+    project = Path(args.project).expanduser().resolve()
+    contract = load_contract(project, args.contract)
+    identity = contract.get("gitIdentity")
+    if not isinstance(identity, dict) or identity.get("tagPushRequired") is not True:
+        raise SystemExit("project contract does not require remote package tags")
+    event_file = resolve_event_file(args.event_file)
+    run_contract_command(project, contract, "pushCommand", event_file)
+    return 0
 
 
 def make_parser() -> argparse.ArgumentParser:
@@ -878,11 +1189,24 @@ def make_parser() -> argparse.ArgumentParser:
     build.add_argument("--contract", default=argparse.SUPPRESS)
     build.add_argument("--target", required=True)
     build.add_argument("--option", action="append", default=[])
-    build.add_argument("--allow-dirty", action="store_true")
     build.add_argument("--confirm-build", action="store_true")
     build.add_argument("--confirm-upload", action="store_true")
     build.add_argument("--poll-interval", type=float, default=1.0)
     build.set_defaults(func=run_build)
+
+    record = subparsers.add_parser("record")
+    record.add_argument("--project", default=argparse.SUPPRESS)
+    record.add_argument("--contract", default=argparse.SUPPRESS)
+    record.add_argument("--event-file", required=True)
+    record.add_argument("--confirm-record", action="store_true")
+    record.set_defaults(func=run_record)
+
+    push_tag = subparsers.add_parser("push-tag")
+    push_tag.add_argument("--project", default=argparse.SUPPRESS)
+    push_tag.add_argument("--contract", default=argparse.SUPPRESS)
+    push_tag.add_argument("--event-file", required=True)
+    push_tag.add_argument("--confirm-push", action="store_true")
+    push_tag.set_defaults(func=run_push_tag)
     return parser
 
 

@@ -23,7 +23,7 @@ Read `references/release-agent-contract.md` when `PACKAGING.md` links a release 
 - Treat store upload, production deployment, account mutation, or third-party service submission as external-state mutation. Require a separate explicit confirmation for that step.
 - Do not invent signing credentials, profiles, bundle identifiers, package names, or environment values.
 - Do not paste secret values, private key paths, tokens, passwords, or full signing credential paths into the final answer.
-- For external, production, or store-facing releases, block on unexpected dirty worktrees unless the user explicitly accepts the dirty state and the final summary calls it out.
+- Apply the project contract's dirty-worktree policy literally. `block` and the store side of `block-store-release` are not user-overridable; stop and require a clean worktree.
 - Prefer the project-owned `PACKAGING.md` plus release agent contract over manual UI interaction.
 - If `PACKAGING.md` is missing or does not identify a reliable release path, stop before building and report the missing project contract instead of improvising a store package.
 
@@ -43,7 +43,7 @@ Read `references/release-agent-contract.md` when `PACKAGING.md` links a release 
    - Target: Android APK, Android AAB, iOS IPA, internal QA, Play testing, Play production, ad hoc iOS, TestFlight, or App Store.
    - Purpose/audience: local QA, internal testing, closed testing, production update, store upload, or artifact-only handoff.
    - Version: confirm the documented source, usually `pubspec.yaml` `version:`, CI build number, or a project release file.
-   - Worktree: if dirty, list `git status --short` entries and ask whether to stop or continue with the dirty state.
+   - Worktree: if dirty, list `git status --short` entries. Stop when the project policy blocks it; only `warn` or `allow` may continue.
    - Runtime environment: release env file, API base URL posture, feature flags, analytics, crash reporting, diagnostics, or flavor values that the project explicitly documents.
    - Signing/export: keystore, provisioning profile, export method, signing mode, keychain requirements, or CI signing setup as documented by the project.
    - Upload behavior: whether to upload after build, whether to wait for remote processing, and whether this mutates external state.
@@ -61,12 +61,20 @@ Read `references/release-agent-contract.md` when `PACKAGING.md` links a release 
 6. Watch the build to completion.
    If it fails, report the failing command section, exit code, nearest actionable missing prerequisite, and any evidence paths already produced. If it succeeds, prefer manifest-backed evidence over remembered parameters.
 
-7. Close with release evidence.
-   Summarize the target, version, git commit, dirty status, artifact path, manifest path, symbols/dSYM/mapping path when present, upload status, and follow-up validation that remains outside local packaging.
+7. Close the local package record when the project defines `releaseRecords`.
+   - Summarize the target, version, Git identity, artifact, manifest, symbols, upload state, and generated record draft.
+   - Let the user review the draft. Only a separate record confirmation authorizes the helper's `record` command to create the annotated local tag and append the ledger event.
+   - When the project requires remote tags, a separate push confirmation authorizes `push-tag`. Never infer push permission from build, record, Store upload, or deployment confirmation.
+   - Report Store upload and any remaining external/device validation separately.
 
 ## Release Agent Contract
 
 When a Flutter project needs repeatable AI-assisted release packaging, create a project-owned release agent contract instead of hardcoding project details into this skill. Use `assets/templates/release-agent-contract.json` as a starting point after reading the reference contract. Link the contract from `PACKAGING.md`.
+
+The current template is schema version 2. The helper continues to read legacy
+version 1 contracts without requiring the newer Git identity, release-record,
+target-command, or grouped-evidence fields; do not treat that compatibility as
+proof that an older project provides the stronger version 2 guarantees.
 
 Recommended project-owned path:
 
@@ -98,4 +106,22 @@ python3 /path/to/flutter-release-packager/scripts/release_console_client.py buil
   --confirm-build
 ```
 
-Add `--allow-dirty` only after the user accepts the dirty state. Add `--confirm-upload` only after separate upload confirmation. The helper reads project facts from the contract, starts the project release console, calls the documented endpoints, redacts configured secrets, streams job logs, and prints evidence labels configured by the project.
+Add `--confirm-upload` only after separate upload confirmation. The helper reads project facts from the contract, starts the project release console, calls the documented endpoints, redacts configured secrets, streams job logs, and prints evidence labels configured by the project.
+
+After reviewing a generated record draft:
+
+```bash
+python3 /path/to/flutter-release-packager/scripts/release_console_client.py record \
+  --project /path/to/flutter-app \
+  --event-file /path/to/release-record.json \
+  --confirm-record
+```
+
+When the project requires the package tag on its approved remote, confirm that external action separately:
+
+```bash
+python3 /path/to/flutter-release-packager/scripts/release_console_client.py push-tag \
+  --project /path/to/flutter-app \
+  --event-file /path/to/release-record.json \
+  --confirm-push
+```

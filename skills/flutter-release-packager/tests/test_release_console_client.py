@@ -66,6 +66,13 @@ class ValidateContractTest(unittest.TestCase):
         assert isinstance(targets, list)
         for target in targets:
             assert isinstance(target, dict)
+            options = target.pop("options")
+            assert isinstance(options, list)
+            target["allowedOptions"] = [
+                option["name"]
+                for option in options
+                if isinstance(option, dict) and isinstance(option.get("name"), str)
+            ]
             for field in ("platform", "releaseLine", "branchTemplate", "command"):
                 target.pop(field)
             evidence = target.get("evidence")
@@ -91,6 +98,22 @@ class ValidateContractTest(unittest.TestCase):
             ),
             ["evidence"],
         )
+
+    def test_schema_two_accepts_matching_legacy_allowed_options(self) -> None:
+        target = self.first_target()
+        options = target["options"]
+        assert isinstance(options, list)
+        target["allowedOptions"] = [
+            option["name"]
+            for option in options
+            if isinstance(option, dict) and isinstance(option.get("name"), str)
+        ]
+
+        CLIENT.validate_contract(self.contract)
+
+        target["allowedOptions"].append("notInTypedOptions")
+        with self.assertRaisesRegex(SystemExit, r"must match target options schema"):
+            CLIENT.validate_contract(self.contract)
 
     def test_unknown_contract_schema_is_rejected(self) -> None:
         self.contract["schemaVersion"] = 3

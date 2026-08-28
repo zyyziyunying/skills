@@ -91,10 +91,6 @@
       "requiredEnvFiles": [
         "assets/env/release.env"
       ],
-      "allowedOptions": [
-        "analyticsEnabled",
-        "crashlyticsEnabled"
-      ],
       "options": [
         {
           "name": "analyticsEnabled",
@@ -165,13 +161,6 @@
       ],
       "requiredEnvFiles": [
         "assets/env/release.env"
-      ],
-      "allowedOptions": [
-        "exportParentDir",
-        "uploadAfterBuild",
-        "uploadWait",
-        "analyticsEnabled",
-        "crashlyticsEnabled"
       ],
       "options": [
         {

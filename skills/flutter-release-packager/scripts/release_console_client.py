@@ -155,6 +155,8 @@ def validate_contract(contract: dict[str, Any]) -> None:
                 raise SystemExit(f"target {target_id}.{field} must be a non-empty string")
         if schema_version == 2:
             require_command(target.get("command"), f"target {target_id}.command")
+            if not isinstance(target.get("options"), list):
+                raise SystemExit(f"target {target_id} must define options")
         elif "command" in target:
             require_command(target.get("command"), f"target {target_id}.command")
         for key in ("requiredFiles", "requiredEnvFiles"):

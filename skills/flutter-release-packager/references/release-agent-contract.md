@@ -54,8 +54,11 @@ Each target should describe:
 - `branchTemplate`: exact named-branch shape for this target.
 - `requiredFiles`: file paths that must exist before running the target.
 - `requiredEnvFiles`: env/config files that must exist and be validated.
-- `options`: optional typed parameter schema for agent-supplied build options.
-- `allowedOptions`: compatibility allowlist for parameters an agent may pass. If `options` exists, keep `allowedOptions` in sync with the option names.
+- `options`: typed parameter schema for agent-supplied build options; its names
+  are the allowed option set in schema version 2.
+- `allowedOptions`: legacy compatibility allowlist. New schema version 2
+  contracts omit it; existing contracts may retain it only when it exactly
+  matches the typed option names.
 - `forbiddenOptions`: parameters an agent must not pass, usually because the project owns them elsewhere.
 - `upload`: whether upload is unsupported, optional, required, which option names trigger upload, whether wait options exist, whether a condition must be true, and whether separate confirmation is required.
 - `evidence`: log labels, manifest paths, artifact paths, symbol paths, upload status/log labels, and fields that should appear in final summaries.
@@ -92,7 +95,7 @@ The helper uses separate `record --confirm-record` and `push-tag --confirm-push`
 ## Rules
 
 - Use schema version 2 for new contracts. Version 2 requires each target's
-  `platform`, `releaseLine`, `branchTemplate`, `command`, and complete
+  `platform`, `releaseLine`, `branchTemplate`, `command`, typed `options`, and complete
   `requiredLabelGroups` when evidence is required. Version 1 remains readable
   for existing projects, where those newer fields are optional and legacy
   required evidence means at least one non-empty configured label.

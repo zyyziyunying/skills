@@ -1,0 +1,4 @@
+interface:
+  display_name: "Session Work Report"
+  short_description: "Summarize long sessions with evidence and useful visuals"
+  default_prompt: "Use $session-work-report to summarize this session into a concise, evidence-backed report with a visual only when it improves understanding."

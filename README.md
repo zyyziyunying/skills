@@ -61,6 +61,7 @@ npx skills add zyyziyunying/skills --all
 | `playwright` | Browser automation through Playwright CLI and wrapper scripts. |
 | `playwright-interactive` | Persistent Playwright browser and Electron debugging. |
 | `r8-analyzer` | Audit Android R8 configuration, analyzer reports, and keep-rule risk. |
+| `session-work-report` | Summarize substantial session work into an evidence-backed report or handoff with useful visuals when appropriate. |
 | `screenshot` | Capture desktop or app screenshots when OS-level capture is needed. |
 
 ## Recommended workflow entry

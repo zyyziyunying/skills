@@ -6,6 +6,9 @@ All notable changes to this repository will be documented in this file.
 
 ### Added
 
+- Added `session-work-report` for concise, evidence-backed session recaps,
+  completion reports, and handoffs, with Mermaid or tabular visuals selected
+  only when they materially improve understanding.
 - Added `flutter-app-size` for Flutter release artifact measurement, DevTools App Size Tool analysis, size diff evidence, split debug info, obfuscation, asset/package reduction, and iOS App Thinning guidance.
 - Added `humanizer` as a manual-only English prose skill for removing common AI-writing tells while preserving meaning and voice.
 - Added `independent-verifier` as the single entry for focused review, bug-value

@@ -54,8 +54,10 @@ acceptance evidence when an active workflow needs independent validation.
 7. Classify a failure before editing: implementation failure, assertion/source
    conflict, specification ambiguity, or invalid harness/fixture.
 8. Fix the responsible layer; change an assertion only when an authoritative
-   source proves it is wrong. Re-run and report the command, outcome, and any
-   unproven pre-fix behavior.
+   source proves it is wrong. If the expected behavior remains ambiguous, stop
+   and raise the product or specification question; do not guess or weaken the
+   assertion. Otherwise re-run and report the command, outcome, and any unproven
+   pre-fix behavior.
 
 ## Conditional Recipes
 

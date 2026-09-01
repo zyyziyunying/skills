@@ -120,9 +120,13 @@ def parse_startup_console_url(value: Any) -> urllib.parse.ParseResult:
 
 def validate_contract(contract: dict[str, Any]) -> None:
     schema_version = contract.get("schemaVersion")
-    if schema_version not in SUPPORTED_SCHEMA_VERSIONS:
+    if (
+        type(schema_version) is not int
+        or schema_version not in SUPPORTED_SCHEMA_VERSIONS
+    ):
         raise SystemExit(
-            "release agent contract schemaVersion must be one of: "
+            "release agent contract schemaVersion must be an integer with one "
+            "of these values: "
             + ", ".join(str(value) for value in sorted(SUPPORTED_SCHEMA_VERSIONS))
         )
     policy = contract.get("dirtyWorktreePolicy")
@@ -133,14 +137,23 @@ def validate_contract(contract: dict[str, Any]) -> None:
         )
     validate_startup_url_pattern(contract)
     identity = contract.get("gitIdentity")
-    if (
-        schema_version == 2
-        and isinstance(identity, dict)
-        and not isinstance(identity.get("requiresNamedBranch"), bool)
-    ):
-        raise SystemExit(
-            "schema version 2 gitIdentity.requiresNamedBranch must be a boolean"
-        )
+    if schema_version == 2 and "gitIdentity" in contract:
+        if not isinstance(identity, dict):
+            raise SystemExit("schema version 2 gitIdentity must be an object")
+        if not isinstance(identity.get("requiresNamedBranch"), bool):
+            raise SystemExit(
+                "schema version 2 gitIdentity.requiresNamedBranch must be a boolean"
+            )
+    if isinstance(identity, dict):
+        for field in (
+            "requiresNamedBranch",
+            "requiresCleanWorktree",
+            "tagPushRequired",
+            "pushTagsAutomatically",
+            "requiresSeparatePushConfirmation",
+        ):
+            if field in identity and not isinstance(identity.get(field), bool):
+                raise SystemExit(f"gitIdentity.{field} must be a boolean")
     requires_named_branch = (
         isinstance(identity, dict)
         and identity.get("requiresNamedBranch") is True
@@ -197,7 +210,7 @@ def validate_contract(contract: dict[str, Any]) -> None:
         validate_upload_schema(target)
         validate_evidence_schema(target, schema_version=schema_version)
     records = contract.get("releaseRecords")
-    if records is not None:
+    if "releaseRecords" in contract:
         if not isinstance(records, dict):
             raise SystemExit("releaseRecords must be an object")
         require_command(records.get("tagCommand"), "releaseRecords.tagCommand")
@@ -1188,7 +1201,11 @@ def run_record(args: argparse.Namespace) -> int:
     run_contract_command(project, contract, "appendCommand", event_file)
     identity = contract.get("gitIdentity")
     if isinstance(identity, dict) and identity.get("tagPushRequired") is True:
-        print("Release record completed locally; required remote tag push is still pending.")
+        print(
+            "Release record completed locally. This command did not perform a "
+            "remote tag push; package-tag remote handling uses the separately "
+            "confirmed push-tag flow."
+        )
     else:
         print("Release record completed locally.")
     return 0

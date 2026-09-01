@@ -14,15 +14,19 @@ Use another path only when the project already has a release tooling convention.
 
 Keep the contract explicit and boring. Prefer strings, booleans, arrays, and command arrays over prose.
 
-- `schemaVersion`: integer contract version. New contracts use version 2; the
-  helper retains version 1 compatibility for legacy contracts that predate Git
+- `schemaVersion`: literal JSON integer contract version (`1` or `2`), not a
+  boolean, float, or numeric string. New contracts use version 2; the helper
+  retains version 1 compatibility for legacy contracts that predate Git
   identity, release records, exact target commands, and grouped evidence.
 - `projectKind`: usually `flutter-app`, `flutter-package`, or `flutter-plugin`.
 - `versionSource`: where the package version comes from, such as `pubspec.yaml version`, CI build metadata, or a release file.
 - `releaseConsole`: local release-console protocol used by the generic helper.
 - `status`: optional extra non-mutating discovery commands.
 - `dirtyWorktreePolicy`: `block`, `block-store-release`, `warn`, or `allow`.
-- `gitIdentity`: clean-source requirements, optional named-branch template enforcement, package-tag rules, whether tags must reach an approved remote, and the separate-push-confirmation boundary.
+- `gitIdentity`: object containing clean-source requirements, optional
+  named-branch template enforcement, package-tag rules, whether tags must reach
+  an approved remote, and the separate-push-confirmation boundary. It is
+  optional only when `releaseRecords` is absent.
 - `releaseRecords`: optional manifest-draft, annotated-tag, append, and remote-tag-push command arrays used after a successful build.
 - `stripEnvironmentPrefixes`: environment variable prefixes that must be removed from the parent shell before starting the release console.
 - `secretRedaction`: key names, environment prefixes, path fields, or log patterns that must be redacted.
@@ -83,7 +87,8 @@ The `upload` object should define:
 
 The `evidence` object may define any `*Labels` arrays. Common labels are `artifactLabels`, `flutterOutputLabels`, `manifestLabels`, `symbolLabels`, `artifactsDirLabels`, `releaseRecordLabels`, `uploadStatusLabels`, and `uploadLogLabels`. When `requiredForSuccess: true`, define `requiredLabelGroups` as the `*Labels` keys that must each contribute at least one final log value. This applies to internal and store targets alike; keep conditional upload groups out of the required set unless upload itself is mandatory.
 
-When present, `releaseRecords` should define:
+When the `releaseRecords` key is present, its value must be an object; explicit
+`null` is invalid. The object should define:
 
 - `draftLabels`: log labels that expose the generated record draft.
 - `tagCommand`: project-owned command that reads `--event-file`, creates or
@@ -95,6 +100,12 @@ When present, `releaseRecords` should define:
   `--event-file` and pushes and re-verifies the applicable tag on the approved
   remote.
 
+`releaseRecords` requires a `gitIdentity` object with boolean
+`requiresNamedBranch` and `requiresCleanWorktree=true`. When
+`tagPushRequired=true`, that identity must also define a non-empty `tagRemote`,
+`pushTagsAutomatically=false`, and `requiresSeparatePushConfirmation=true`;
+`pushCommand` must select that remote explicitly.
+
 The helper treats `--event-file` as opaque: its format and tag-presence logic
 belong to project-owned commands, not a generic helper field. It uses separate
 `record --confirm-record` and `push-tag --confirm-push` commands. A build or
@@ -105,8 +116,9 @@ Store-upload confirmation never authorizes either Git mutation.
 - Use schema version 2 for new contracts. Version 2 requires each target's
   `platform`, `releaseLine`, `command`, typed `options`, and complete
   `requiredLabelGroups` when evidence is required; it also requires `branchTemplate`
-  when `gitIdentity.requiresNamedBranch=true`, and an explicit boolean
-  `gitIdentity.requiresNamedBranch` whenever `gitIdentity` is present.
+  when `gitIdentity.requiresNamedBranch=true`. Whenever `gitIdentity` is
+  present, it must be an object with an explicit boolean
+  `requiresNamedBranch`.
   Version 1 remains readable for existing projects, where those newer fields
   are optional and legacy required evidence means at least one non-empty
   configured label.
@@ -114,6 +126,9 @@ Store-upload confirmation never authorizes either Git mutation.
   it enforces a named branch and the target's exact branch template only when
   `requiresNamedBranch=true`. Version 2 requires an explicit boolean; omitted
   remains non-branch-enforcing only for version 1 compatibility.
+- Every helper-consumed Git-identity flag must be a literal JSON boolean when
+  present: `requiresNamedBranch`, `requiresCleanWorktree`, `tagPushRequired`,
+  `pushTagsAutomatically`, and `requiresSeparatePushConfirmation`.
 - Do not store secrets in the contract.
 - Do not include absolute machine-local secret paths in the contract.
 - Keep upload behavior explicit. Uploads should require a second confirmation unless the project rules clearly say otherwise.

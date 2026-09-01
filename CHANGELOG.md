@@ -156,6 +156,44 @@ All notable changes to this repository will be documented in this file.
     references retain bounded-axis, fixed-format, responsive, and preview
     details. Validate frontmatter, internal links, and known project preview
     consumers when updating the skill.
+- Tightened schema version and release-record lifecycle behavior for
+  `flutter-release-packager` contracts.
+  - Affected API/behavior: `schemaVersion` must be a literal JSON integer `1`
+    or `2`. When a schema version 2 contract includes `gitIdentity`, it must be
+    an object and must define boolean `requiresNamedBranch`. Contracts with
+    `releaseRecords` continue to require that object; explicit
+    `releaseRecords: null` and non-boolean helper-consumed Git-identity flags
+    are rejected. A generic record helper may invoke `tagCommand` for a tagless
+    draft, so the project-owned command must succeed without creating a tag in
+    that case. Record completion output now states the separate push boundary
+    without claiming unread remote state.
+    The BesideYou project command retains `Created package tag:` for new tags
+    and reports `Verified existing package tag:` on idempotent reruns.
+  - Affected callers: project-owned schema version 2 contracts and release
+    record commands consumed by `scripts/release_console_client.py`, especially
+    contracts that previously used a malformed non-object `gitIdentity`,
+    omitted the branch-policy boolean, rejected a valid tagless draft, or parsed
+    the former remote-push status sentence or assumed every successful tag
+    command reported a newly created tag.
+  - Migration: set `requiresNamedBranch` to `true` and provide each target's
+    `branchTemplate` when a named source branch is mandatory; set it to `false`
+    for detached-HEAD-compatible flows. Keep `schemaVersion` as a literal JSON
+    integer `1` or `2`, rather than a boolean, float, or numeric string. If
+    release records are unused, omit the key instead of assigning `null`; use
+    literal JSON booleans for every Git-identity flag. If release records support
+    a tagless line, make its `tagCommand` a successful no-op for those events
+    while retaining normal tag creation for tagged lines. Treat the helper's
+    completion text as guidance rather than remote state; use the separately
+    confirmed push flow to query or mutate that state.
+    Treat project tag-command exit status as the success contract, or accept
+    both the created and verified success messages.
+  - Validation/docs: contract tests cover literal-integer schema versions,
+    omitted and malformed identities, null record configuration, runtime flag
+    types, neutral push-boundary output, and the tag-before-append helper flow;
+    the project regression covers tagless commands and repeated tagged-command
+    readiness.
+    Release-agent contract guidance documents the schema and optional-object
+    boundaries.
 - Hardened `flutter-release-packager` contract validation to reject malformed
   release inputs before status or build execution.
   - Affected API/behavior: `requiredFiles` and `requiredEnvFiles`, when present,

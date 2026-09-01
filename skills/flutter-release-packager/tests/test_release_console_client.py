@@ -7,6 +7,7 @@ import copy
 import io
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -117,8 +118,21 @@ class ValidateContractTest(unittest.TestCase):
 
     def test_unknown_contract_schema_is_rejected(self) -> None:
         self.contract["schemaVersion"] = 3
-        with self.assertRaisesRegex(SystemExit, r"schemaVersion must be one of: 1, 2"):
+        with self.assertRaisesRegex(
+            SystemExit,
+            r"schemaVersion must be an integer with one of these values: 1, 2",
+        ):
             CLIENT.validate_contract(self.contract)
+
+    def test_non_integer_contract_schema_is_rejected(self) -> None:
+        for value in (True, 1.0, 2.0):
+            with self.subTest(value=value):
+                self.contract["schemaVersion"] = value
+                with self.assertRaisesRegex(
+                    SystemExit,
+                    r"schemaVersion must be an integer",
+                ):
+                    CLIENT.validate_contract(self.contract)
 
     def test_optional_file_arrays_may_be_omitted(self) -> None:
         target = self.first_target()
@@ -218,6 +232,30 @@ class ValidateContractTest(unittest.TestCase):
         ):
             CLIENT.validate_contract(self.contract)
 
+    def test_explicit_null_release_records_is_rejected(self) -> None:
+        self.contract["releaseRecords"] = None
+
+        with self.assertRaisesRegex(SystemExit, r"releaseRecords must be an object"):
+            CLIENT.validate_contract(self.contract)
+
+    def test_git_identity_runtime_flags_must_be_booleans(self) -> None:
+        for field in (
+            "requiresCleanWorktree",
+            "tagPushRequired",
+            "pushTagsAutomatically",
+            "requiresSeparatePushConfirmation",
+        ):
+            with self.subTest(field=field):
+                contract = copy.deepcopy(self.contract)
+                identity = contract["gitIdentity"]
+                assert isinstance(identity, dict)
+                identity[field] = "true"
+                with self.assertRaisesRegex(
+                    SystemExit,
+                    rf"gitIdentity\.{field} must be a boolean",
+                ):
+                    CLIENT.validate_contract(contract)
+
     def test_target_command_is_required(self) -> None:
         self.first_target().pop("command")
 
@@ -268,6 +306,23 @@ class ValidateContractTest(unittest.TestCase):
             r"schema version 2 gitIdentity.requiresNamedBranch must be a boolean",
         ):
             CLIENT.validate_contract(self.contract)
+
+    def test_schema_two_rejects_non_object_git_identity(self) -> None:
+        for value in (None, "invalid", [], True):
+            with self.subTest(value=value):
+                contract = copy.deepcopy(self.contract)
+                contract["gitIdentity"] = value
+                with self.assertRaisesRegex(
+                    SystemExit,
+                    r"schema version 2 gitIdentity must be an object",
+                ):
+                    CLIENT.validate_contract(contract)
+
+    def test_schema_two_allows_omitted_git_identity(self) -> None:
+        self.contract.pop("gitIdentity")
+        self.contract.pop("releaseRecords")
+
+        CLIENT.validate_contract(self.contract)
 
     def test_release_records_require_exact_git_identity_posture(self) -> None:
         identity = self.contract["gitIdentity"]
@@ -547,12 +602,35 @@ class ReleaseLifecycleTest(unittest.TestCase):
     def test_record_forwards_opaque_draft_to_project_commands(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)
+            command_script = project / "record_command.py"
+            command_script.write_text(
+                "from pathlib import Path\n"
+                "import sys\n"
+                "event_file = Path(sys.argv[sys.argv.index('--event-file') + 1])\n"
+                "trace_file = event_file.parent / 'record-commands.log'\n"
+                "with trace_file.open('a', encoding='utf-8') as handle:\n"
+                "    handle.write(f'{sys.argv[1]}:{event_file.name}\\n')\n"
+                "if sys.argv[1] == 'tag':\n"
+                "    print('Package tag not required; no tag created.')\n"
+                "else:\n"
+                "    print('Release record appended.')\n",
+                encoding="utf-8",
+            )
+            contract = template_contract()
+            records = contract["releaseRecords"]
+            assert isinstance(records, dict)
+            records["tagCommand"] = [sys.executable, str(command_script), "tag"]
+            records["appendCommand"] = [
+                sys.executable,
+                str(command_script),
+                "append",
+            ]
             contract_path = project / CLIENT.DEFAULT_CONTRACT_PATH
             contract_path.parent.mkdir(parents=True)
-            contract_path.write_text(json.dumps(template_contract()), encoding="utf-8")
+            contract_path.write_text(json.dumps(contract), encoding="utf-8")
             event_file = project / "release-record.yaml"
             event_file.write_text(
-                "tag: release/store/android/v1.0.0+1\n",
+                "release_line: daily\n",
                 encoding="utf-8",
             )
             args = SimpleNamespace(
@@ -561,16 +639,46 @@ class ReleaseLifecycleTest(unittest.TestCase):
                 event_file=str(event_file),
                 confirm_record=True,
             )
-            completed = SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
-            with mock.patch.object(
-                CLIENT.subprocess,
-                "run",
-                return_value=completed,
-            ) as run:
+            output = io.StringIO()
+            with mock.patch("sys.stdout", output):
                 self.assertEqual(CLIENT.run_record(args), 0)
 
-            commands = [call.args[0] for call in run.call_args_list]
-            self.assertEqual([command[3] for command in commands], ["tag", "append"])
+            self.assertEqual(
+                (project / "record-commands.log").read_text(encoding="utf-8").splitlines(),
+                ["tag:release-record.yaml", "append:release-record.yaml"],
+            )
+            self.assertIn("Package tag not required", output.getvalue())
+            self.assertIn("Release record appended", output.getvalue())
+
+    def test_record_reports_push_boundary_without_claiming_remote_state(self) -> None:
+        contract = {
+            "gitIdentity": {
+                "dailyTagRequired": False,
+                "tagPushRequired": True,
+            }
+        }
+        args = SimpleNamespace(
+            project=".",
+            contract=CLIENT.DEFAULT_CONTRACT_PATH,
+            event_file="daily-release-record.json",
+            confirm_record=True,
+        )
+        event_file = Path("daily-release-record.json").resolve()
+        output = io.StringIO()
+        with (
+            mock.patch.object(CLIENT, "load_contract", return_value=contract),
+            mock.patch.object(CLIENT, "resolve_event_file", return_value=event_file),
+            mock.patch.object(CLIENT, "run_contract_command"),
+            mock.patch("sys.stdout", output),
+        ):
+            self.assertEqual(CLIENT.run_record(args), 0)
+
+        self.assertIn(
+            "This command did not perform a remote tag push",
+            output.getvalue(),
+        )
+        self.assertIn("separately confirmed push-tag flow", output.getvalue())
+        self.assertNotIn("pending", output.getvalue())
 
     def test_push_tag_requires_separate_confirmation(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

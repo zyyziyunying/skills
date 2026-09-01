@@ -3,19 +3,18 @@ name: git-commit-helper
 description: Git 提交助手。当用户要求提交代码、创建 commit 或整理提交时使用；默认规划原子提交边界，必要时拆分为多个 commit。
 ---
 
-# Git 提交助手技能
+# Git 提交助手
 
-## 触发时机
-- 用户说"提交代码"、"创建 commit"、"commit 一下"
-- 用户说"帮我提交"、"提交这些改动"、"提交一下我的代码"
-- 用户说"整理提交"、"拆分提交"、"按颗粒度提交"
+## 适用范围
+
+用户要求提交代码、创建或整理 commit 时使用。先规划原子边界；一次请求可以产生多个 commit。
 
 ## 工作流程
 
 ### 安全边界
-- 本技能涉及的 Git 操作仅限 `git status`、`git diff`、`git ls-files`、`git log`、`git add`、`git restore --staged` 和 `git commit`。提交前的验证命令只有在用户任务或项目规则已经授权、且与当前提交直接相关时才可运行；本技能本身不会扩大命令或副作用权限。
-- 不要执行 `git push`、`git reset`、`git clean`、`git checkout`、`git switch`、`git rebase`、`git merge`、`git stash` 等会发布、丢弃、移动或重写用户状态的命令。
-- 不要自动修改远端、切换分支、重写已有历史或丢弃未提交的工作区内容；用户明确请求创建的 commit 除外。如果需要超出本技能权限的操作，停下并说明原因。
+
+- 本技能仅使用 `git status`、`git diff`、`git ls-files`、`git log`、`git add`、`git restore --staged` 和 `git commit`。验证命令必须已获用户任务或项目规则授权，且与当前提交直接相关。
+- 不执行 `git push`、`git reset`、`git clean`、`git checkout`、`git switch`、`git rebase`、`git merge` 或 `git stash`；不修改远端、切换分支、重写历史或丢弃工作区内容。需要这些操作时停下说明。
 
 ### 1. 检查工作区
 先判断当前仓库是否适合提交，区分 staged、unstaged、untracked、冲突状态和正在进行的 rebase/merge：
@@ -32,10 +31,8 @@ git log --oneline -5
 ### 2. 制定提交计划
 目标不是把一次用户请求压成一个 commit，而是创建语义清晰、可回滚、可 review 的原子提交。提交前必须先判断提交边界：
 
-- 每个 commit 只包含一个逻辑目的。
-- 功能代码和对应测试通常可以放在同一个 commit。
-- 纯格式化、依赖更新、生成文件、文档更新应与功能/修复分开，除非它们是同一变更不可分割的一部分。
-- 多个 bugfix、多个功能点、重构与行为变更混在一起时，必须拆分。
+- 每个 commit 只包含一个逻辑目的；功能代码和对应测试通常放在一起。
+- 纯格式化、依赖、生成文件和文档与功能/修复分开，除非不可分割；多个 bugfix、功能点、重构或行为变更混在一起时必须拆分。
 - 已 staged 的内容也要检查是否混杂；如果 staged 内容不是一个原子变更，先说明当前 staged 状态、拟调整范围和原因。未经用户确认，不要改写用户已有 index。
 - 不要为了减少 commit 数合并无关改动。
 - 如果用户明确要求单个 commit，但改动明显跨多个主题，先说明建议拆分；除非用户坚持，否则按原子提交执行。
@@ -68,15 +65,7 @@ git diff --cached
 
 **格式规范**：`type(scope): description`
 
-**类型（type）**：
-- `feat`: 新功能
-- `fix`: 修复 bug
-- `refactor`: 重构代码（不改变功能）
-- `docs`: 文档更新
-- `style`: 代码格式调整
-- `test`: 测试相关
-- `chore`: 构建/工具/依赖相关
-- `perf`: 性能优化
+**类型（type）**：按 staged 内容选最准确的 `feat`、`fix`、`refactor`、`docs`、`style`、`test`、`chore` 或 `perf`。
 
 **作用域（scope）**：可选，表示影响的模块或组件
 
@@ -115,35 +104,7 @@ git status --short
 git log --oneline -1
 ```
 
-## Commit Message 示例
-
-### 示例 1：重构
-```
-refactor(ai-pet): 提取调试信息到独立扩展
-
-- 创建 controller_test_info.dart 处理调试信息
-- 优化 scheduleNextActivity 同步机制
-- 删除废弃的注释代码
-```
-
-### 示例 2：修复 bug
-```
-fix(scheduling): 解决活动切换时信息不同步问题
-
-使用 pendingActivity 机制确保活动信息与实际播放状态同步
-```
-
-### 示例 3：新功能
-```
-feat(pet-controller): 添加活动关系可视化展示
-
-在调试信息中显示当前活动的所有可能过渡关系
-```
-
 ## 注意事项
 
-- 没有可提交内容时，不要强行生成 commit
-- 优先遵循项目已有的 commit message 风格；最近几条历史提交仅用于对齐语气和粒度
-- 保持提交原子化，一次只做一件事
-- 一次用户请求可以产生多个 commit；commit 数量由变更边界决定，不由用户请求次数决定
-- 重要更改可在正文说明背景，但不要把实现细节写成流水账
+- 没有可提交内容时，不要强行生成 commit。
+- 以项目近期历史对齐语气和粒度；重要变更可在正文交代背景，但不写实现流水账。

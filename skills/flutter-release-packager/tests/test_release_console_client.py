@@ -239,6 +239,36 @@ class ValidateContractTest(unittest.TestCase):
                 ):
                     CLIENT.validate_contract(contract)
 
+    def test_schema_two_allows_branchless_targets_when_identity_allows_them(self) -> None:
+        identity = self.contract["gitIdentity"]
+        targets = self.contract["targets"]
+        assert isinstance(identity, dict)
+        assert isinstance(targets, list)
+        identity["requiresNamedBranch"] = False
+        for target in targets:
+            assert isinstance(target, dict)
+            target.pop("branchTemplate")
+
+        CLIENT.validate_contract(self.contract)
+
+    def test_schema_two_requires_explicit_boolean_named_branch_policy(self) -> None:
+        identity = self.contract["gitIdentity"]
+        assert isinstance(identity, dict)
+        identity.pop("requiresNamedBranch")
+
+        with self.assertRaisesRegex(
+            SystemExit,
+            r"schema version 2 gitIdentity.requiresNamedBranch must be a boolean",
+        ):
+            CLIENT.validate_contract(self.contract)
+
+        identity["requiresNamedBranch"] = "true"
+        with self.assertRaisesRegex(
+            SystemExit,
+            r"schema version 2 gitIdentity.requiresNamedBranch must be a boolean",
+        ):
+            CLIENT.validate_contract(self.contract)
+
     def test_release_records_require_exact_git_identity_posture(self) -> None:
         identity = self.contract["gitIdentity"]
         assert isinstance(identity, dict)
@@ -383,6 +413,40 @@ class ReleaseLifecycleTest(unittest.TestCase):
         ):
             CLIENT.enforce_git_identity(contract, target, Path.cwd())
 
+    def test_git_identity_allows_detached_head_when_contract_allows_it(self) -> None:
+        contract = template_contract()
+        identity = contract["gitIdentity"]
+        target = contract["targets"][0]
+        assert isinstance(identity, dict)
+        assert isinstance(target, dict)
+        identity["requiresNamedBranch"] = False
+        target.pop("branchTemplate")
+        completed = SimpleNamespace(returncode=0, stdout="\n", stderr="")
+        with (
+            mock.patch.object(CLIENT.subprocess, "run", return_value=completed),
+            mock.patch.object(CLIENT, "git_status_short", return_value=[]),
+        ):
+            CLIENT.enforce_git_identity(contract, target, Path.cwd())
+
+    def test_legacy_identity_without_named_branch_allows_detached_head(self) -> None:
+        contract = template_contract()
+        contract["schemaVersion"] = 1
+        contract.pop("releaseRecords")
+        identity = contract["gitIdentity"]
+        target = contract["targets"][0]
+        assert isinstance(identity, dict)
+        assert isinstance(target, dict)
+        identity.pop("requiresNamedBranch")
+        target.pop("branchTemplate")
+        CLIENT.validate_contract(contract)
+
+        completed = SimpleNamespace(returncode=0, stdout="\n", stderr="")
+        with (
+            mock.patch.object(CLIENT.subprocess, "run", return_value=completed),
+            mock.patch.object(CLIENT, "git_status_short", return_value=[]),
+        ):
+            CLIENT.enforce_git_identity(contract, target, Path.cwd())
+
     def test_git_identity_rejects_wrong_store_branch(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)
@@ -450,7 +514,10 @@ class ReleaseLifecycleTest(unittest.TestCase):
             contract_path.parent.mkdir(parents=True)
             contract_path.write_text(json.dumps(template_contract()), encoding="utf-8")
             event_file = project / "release-record.json"
-            event_file.write_text("{}\n", encoding="utf-8")
+            event_file.write_text(
+                '{"git_tag":"release/store/android/v1.0.0+1"}\n',
+                encoding="utf-8",
+            )
             args = SimpleNamespace(
                 project=str(project),
                 contract=CLIENT.DEFAULT_CONTRACT_PATH,
@@ -477,6 +544,34 @@ class ReleaseLifecycleTest(unittest.TestCase):
                 ["--event-file", str(event_file.resolve())],
             )
 
+    def test_record_forwards_opaque_draft_to_project_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            contract_path = project / CLIENT.DEFAULT_CONTRACT_PATH
+            contract_path.parent.mkdir(parents=True)
+            contract_path.write_text(json.dumps(template_contract()), encoding="utf-8")
+            event_file = project / "release-record.yaml"
+            event_file.write_text(
+                "tag: release/store/android/v1.0.0+1\n",
+                encoding="utf-8",
+            )
+            args = SimpleNamespace(
+                project=str(project),
+                contract=CLIENT.DEFAULT_CONTRACT_PATH,
+                event_file=str(event_file),
+                confirm_record=True,
+            )
+            completed = SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
+            with mock.patch.object(
+                CLIENT.subprocess,
+                "run",
+                return_value=completed,
+            ) as run:
+                self.assertEqual(CLIENT.run_record(args), 0)
+
+            commands = [call.args[0] for call in run.call_args_list]
+            self.assertEqual([command[3] for command in commands], ["tag", "append"])
+
     def test_push_tag_requires_separate_confirmation(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)
@@ -498,8 +593,11 @@ class ReleaseLifecycleTest(unittest.TestCase):
             contract_path = project / CLIENT.DEFAULT_CONTRACT_PATH
             contract_path.parent.mkdir(parents=True)
             contract_path.write_text(json.dumps(contract), encoding="utf-8")
-            event_file = project / "release-record.json"
-            event_file.write_text("{}\n", encoding="utf-8")
+            event_file = project / "release-record.yaml"
+            event_file.write_text(
+                "tag: release/store/android/v1.0.0+1\n",
+                encoding="utf-8",
+            )
             args = SimpleNamespace(
                 project=str(project),
                 contract=CLIENT.DEFAULT_CONTRACT_PATH,

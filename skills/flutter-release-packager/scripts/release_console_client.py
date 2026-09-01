@@ -132,6 +132,19 @@ def validate_contract(contract: dict[str, Any]) -> None:
             + ", ".join(sorted(DIRTY_POLICIES))
         )
     validate_startup_url_pattern(contract)
+    identity = contract.get("gitIdentity")
+    if (
+        schema_version == 2
+        and isinstance(identity, dict)
+        and not isinstance(identity.get("requiresNamedBranch"), bool)
+    ):
+        raise SystemExit(
+            "schema version 2 gitIdentity.requiresNamedBranch must be a boolean"
+        )
+    requires_named_branch = (
+        isinstance(identity, dict)
+        and identity.get("requiresNamedBranch") is True
+    )
     targets = contract.get("targets")
     if not isinstance(targets, list) or not targets:
         raise SystemExit("contract targets must be a non-empty list")
@@ -147,12 +160,25 @@ def validate_contract(contract: dict[str, Any]) -> None:
         seen.add(target_id)
         if not isinstance(target.get("storeLike"), bool):
             raise SystemExit(f"target {target_id} must define boolean storeLike")
-        for field in ("platform", "releaseLine", "branchTemplate"):
+        for field in ("platform", "releaseLine"):
             value = target.get(field)
             if schema_version == 2 and (not isinstance(value, str) or not value):
                 raise SystemExit(f"target {target_id} must define non-empty {field}")
             if value is not None and (not isinstance(value, str) or not value):
                 raise SystemExit(f"target {target_id}.{field} must be a non-empty string")
+        branch_template = target.get("branchTemplate")
+        if (
+            schema_version == 2
+            and requires_named_branch
+            and (not isinstance(branch_template, str) or not branch_template)
+        ):
+            raise SystemExit(f"target {target_id} must define non-empty branchTemplate")
+        if branch_template is not None and (
+            not isinstance(branch_template, str) or not branch_template
+        ):
+            raise SystemExit(
+                f"target {target_id}.branchTemplate must be a non-empty string"
+            )
         if schema_version == 2:
             require_command(target.get("command"), f"target {target_id}.command")
             if not isinstance(target.get("options"), list):
@@ -180,8 +206,10 @@ def validate_contract(contract: dict[str, Any]) -> None:
         identity = contract.get("gitIdentity")
         if not isinstance(identity, dict):
             raise SystemExit("releaseRecords requires gitIdentity")
-        if identity.get("requiresNamedBranch") is not True:
-            raise SystemExit("releaseRecords requires a named Git branch")
+        if not isinstance(identity.get("requiresNamedBranch"), bool):
+            raise SystemExit(
+                "releaseRecords requires boolean gitIdentity.requiresNamedBranch"
+            )
         if identity.get("requiresCleanWorktree") is not True:
             raise SystemExit("releaseRecords requires a clean Git worktree")
         if identity.get("tagPushRequired") is True:
@@ -895,7 +923,8 @@ def enforce_git_identity(
     if not isinstance(identity, dict):
         return
     branch = _git_text(project, ["branch", "--show-current"], "Git branch")
-    if identity.get("requiresNamedBranch") is True and not branch:
+    requires_named_branch = identity.get("requiresNamedBranch") is True
+    if requires_named_branch and not branch:
         raise SystemExit("release packaging requires a named Git branch")
     if identity.get("requiresCleanWorktree") is True:
         dirty_files = git_status_short(project, fail_closed=True)
@@ -904,6 +933,8 @@ def enforce_git_identity(
             raise SystemExit(
                 "release packaging requires a clean Git worktree:\n  " + joined
             )
+    if not requires_named_branch:
+        return
     template = target.get("branchTemplate")
     if not isinstance(template, str) or not template:
         return
@@ -1149,13 +1180,17 @@ def resolve_event_file(value: str) -> Path:
 
 def run_record(args: argparse.Namespace) -> int:
     if not args.confirm_record:
-        raise SystemExit("refusing tag/append without --confirm-record")
+        raise SystemExit("refusing record without --confirm-record")
     project = Path(args.project).expanduser().resolve()
     contract = load_contract(project, args.contract)
     event_file = resolve_event_file(args.event_file)
     run_contract_command(project, contract, "tagCommand", event_file)
     run_contract_command(project, contract, "appendCommand", event_file)
-    print("Release record completed locally; required remote tag push is still pending.")
+    identity = contract.get("gitIdentity")
+    if isinstance(identity, dict) and identity.get("tagPushRequired") is True:
+        print("Release record completed locally; required remote tag push is still pending.")
+    else:
+        print("Release record completed locally.")
     return 0
 
 

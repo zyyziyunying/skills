@@ -50,7 +50,7 @@ Read `references/release-agent-contract.md` when `PACKAGING.md` links a release 
    - Artifact destination and validation expectation: local artifact only, install/run validation, store upload, or handoff summary.
 
 4. Explain the final summary before build.
-   Include target, purpose, version source/value, branch/commit, dirty decision plus dirty files, required input files, env posture, signing/export settings, upload setting, artifact destination, and expected evidence. Ask for a clear build confirmation. Ask separately for external upload confirmation when applicable.
+   Include target, purpose, version source/value, source branch/ref when present plus commit, dirty decision plus dirty files, required input files, env posture, signing/export settings, upload setting, artifact destination, and expected evidence. Ask for a clear build confirmation. Ask separately for external upload confirmation when applicable.
 
 5. Launch the build through the documented path.
    - Use the project release command, CI workflow, or `scripts/release_console_client.py build` exactly as documented.
@@ -63,7 +63,7 @@ Read `references/release-agent-contract.md` when `PACKAGING.md` links a release 
 
 7. Close the local package record when the project defines `releaseRecords`.
    - Summarize the target, version, Git identity, artifact, manifest, symbols, upload state, and generated record draft.
-   - Let the user review the draft. Only a separate record confirmation authorizes the helper's `record` command to create the annotated local tag and append the ledger event.
+   - Let the user review the draft. Only a separate record confirmation authorizes the helper's `record` command to run the project-owned tag and append commands. Those commands determine whether the draft carries a package tag.
    - When the project requires remote tags, a separate push confirmation authorizes `push-tag`. Never infer push permission from build, record, Store upload, or deployment confirmation.
    - Report Store upload and any remaining external/device validation separately.
 

@@ -22,7 +22,7 @@ Keep the contract explicit and boring. Prefer strings, booleans, arrays, and com
 - `releaseConsole`: local release-console protocol used by the generic helper.
 - `status`: optional extra non-mutating discovery commands.
 - `dirtyWorktreePolicy`: `block`, `block-store-release`, `warn`, or `allow`.
-- `gitIdentity`: named/clean branch requirements, branch/tag templates, whether tags must reach an approved remote, and the separate-push-confirmation boundary.
+- `gitIdentity`: clean-source requirements, optional named-branch template enforcement, package-tag rules, whether tags must reach an approved remote, and the separate-push-confirmation boundary.
 - `releaseRecords`: optional manifest-draft, annotated-tag, append, and remote-tag-push command arrays used after a successful build.
 - `stripEnvironmentPrefixes`: environment variable prefixes that must be removed from the parent shell before starting the release console.
 - `secretRedaction`: key names, environment prefixes, path fields, or log patterns that must be redacted.
@@ -51,7 +51,7 @@ Each target should describe:
 - `storeLike`: whether this target is external/store-facing and should enforce stricter checks.
 - `command`: exact command array to run when the user confirms the build.
 - `releaseLine`: stable line such as `store` or `daily`.
-- `branchTemplate`: exact named-branch shape for this target.
+- `branchTemplate`: exact named-branch shape for this target when `gitIdentity.requiresNamedBranch=true`. It is optional when that flag is `false`, which permits a clean feature branch or detached commit.
 - `requiredFiles`: file paths that must exist before running the target.
 - `requiredEnvFiles`: env/config files that must exist and be validated.
 - `options`: typed parameter schema for agent-supplied build options; its names
@@ -86,26 +86,40 @@ The `evidence` object may define any `*Labels` arrays. Common labels are `artifa
 When present, `releaseRecords` should define:
 
 - `draftLabels`: log labels that expose the generated record draft.
-- `tagCommand`: creates or verifies the annotated local package tag for `--event-file`.
-- `appendCommand`: verifies the tag and idempotently appends the draft.
-- `pushCommand`: required when `gitIdentity.tagPushRequired=true`; pushes and re-verifies the tag on the approved remote.
+- `tagCommand`: project-owned command that reads `--event-file`, creates or
+  verifies an annotated local package tag when needed, and otherwise exits
+  successfully without a tag.
+- `appendCommand`: idempotently appends the draft and may verify a package tag
+  when the project requires one.
+- `pushCommand`: required when `gitIdentity.tagPushRequired=true`; it reads
+  `--event-file` and pushes and re-verifies the applicable tag on the approved
+  remote.
 
-The helper uses separate `record --confirm-record` and `push-tag --confirm-push` commands. A build or Store-upload confirmation never authorizes either Git mutation.
+The helper treats `--event-file` as opaque: its format and tag-presence logic
+belong to project-owned commands, not a generic helper field. It uses separate
+`record --confirm-record` and `push-tag --confirm-push` commands. A build or
+Store-upload confirmation never authorizes either Git mutation.
 
 ## Rules
 
 - Use schema version 2 for new contracts. Version 2 requires each target's
-  `platform`, `releaseLine`, `branchTemplate`, `command`, typed `options`, and complete
-  `requiredLabelGroups` when evidence is required. Version 1 remains readable
-  for existing projects, where those newer fields are optional and legacy
-  required evidence means at least one non-empty configured label.
-- When `gitIdentity` is present, the helper enforces its named/clean posture and
-  the target's exact branch template before contacting the release console.
+  `platform`, `releaseLine`, `command`, typed `options`, and complete
+  `requiredLabelGroups` when evidence is required; it also requires `branchTemplate`
+  when `gitIdentity.requiresNamedBranch=true`, and an explicit boolean
+  `gitIdentity.requiresNamedBranch` whenever `gitIdentity` is present.
+  Version 1 remains readable for existing projects, where those newer fields
+  are optional and legacy required evidence means at least one non-empty
+  configured label.
+- When `gitIdentity` is present, the helper enforces its clean-worktree posture;
+  it enforces a named branch and the target's exact branch template only when
+  `requiresNamedBranch=true`. Version 2 requires an explicit boolean; omitted
+  remains non-branch-enforcing only for version 1 compatibility.
 - Do not store secrets in the contract.
 - Do not include absolute machine-local secret paths in the contract.
 - Keep upload behavior explicit. Uploads should require a second confirmation unless the project rules clearly say otherwise.
 - Treat `block` as absolute. Do not add a generic user override for a project-declared dirty-worktree block.
-- Keep local tag/append and remote tag push separately confirmable. Required remote push must never run automatically.
+- Keep project-owned tag/append and remote tag push separately confirmable.
+  Required remote push must never run automatically.
 - Fail closed for unknown schema versions, unknown options, malformed option/upload/evidence schema, and invalid secret redaction regex patterns.
 - Keep the version source explicit. If `pubspec.yaml` owns the release version, forbid ad hoc version overrides.
 - Keep release-console protocols in the project repo, not in a public generic skill, when the protocol is project-specific.

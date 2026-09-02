@@ -28,6 +28,7 @@
     "cancelEndpoint": "/api/jobs/{id}/cancel"
   },
   "releaseRecords": {
+    "autoRecordAfterBuildSuccess": false,
     "draftLabels": [
       "Release record"
     ],

@@ -63,7 +63,8 @@ Read `references/release-agent-contract.md` when `PACKAGING.md` links a release 
 
 7. Close the local package record when the project defines `releaseRecords`.
    - Summarize the target, version, Git identity, artifact, manifest, symbols, upload state, and generated record draft.
-   - Let the user review the draft. Only a separate record confirmation authorizes the helper's `record` command to run the project-owned tag and append commands. Those commands determine whether the draft carries a package tag.
+   - When `releaseRecords.autoRecordAfterBuildSuccess=true`, the confirmed build authorizes the helper to run the project-owned tag and append commands automatically after the full requested job succeeds. Do not ask for a routine second confirmation. A failed build, failed requested upload, missing evidence, or invalid draft must not record or tag the package.
+   - When automatic closure is absent or false, let the user review the draft and require a separate record confirmation before running the recovery `record` command.
    - When the project requires remote tags, a separate push confirmation authorizes `push-tag`. Never infer push permission from build, record, Store upload, or deployment confirmation.
    - Report Store upload and any remaining external/device validation separately.
 
@@ -108,7 +109,8 @@ python3 /path/to/flutter-release-packager/scripts/release_console_client.py buil
 
 Add `--confirm-upload` only after separate upload confirmation. The helper reads project facts from the contract, starts the project release console, calls the documented endpoints, redacts configured secrets, streams job logs, and prints evidence labels configured by the project.
 
-After reviewing a generated record draft:
+For recovery of an earlier valid draft, or for a project that does not enable
+automatic record closure:
 
 ```bash
 python3 /path/to/flutter-release-packager/scripts/release_console_client.py record \

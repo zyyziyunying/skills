@@ -216,6 +216,11 @@ def validate_contract(contract: dict[str, Any]) -> None:
         require_command(records.get("tagCommand"), "releaseRecords.tagCommand")
         require_command(records.get("appendCommand"), "releaseRecords.appendCommand")
         require_string_list(records.get("draftLabels"), "releaseRecords.draftLabels", required=True)
+        auto_record = records.get("autoRecordAfterBuildSuccess")
+        if auto_record is not None and not isinstance(auto_record, bool):
+            raise SystemExit(
+                "releaseRecords.autoRecordAfterBuildSuccess must be a boolean"
+            )
         identity = contract.get("gitIdentity")
         if not isinstance(identity, dict):
             raise SystemExit("releaseRecords requires gitIdentity")
@@ -1028,7 +1033,11 @@ def run_build(args: argparse.Namespace) -> int:
                     )
                     return 1
                 if exit_code == 0:
-                    print_pending_release_record(previous_logs, contract)
+                    finalize_release_record_after_build(
+                        project,
+                        previous_logs,
+                        contract,
+                    )
                 return exit_code
             time.sleep(args.poll_interval)
             job = console.request_json(
@@ -1139,10 +1148,12 @@ def evidence_required(target: dict[str, Any]) -> bool:
     ) is True
 
 
-def print_pending_release_record(logs: list[str], contract: dict[str, Any]) -> None:
+def release_record_draft_value(
+    logs: list[str], contract: dict[str, Any]
+) -> str | None:
     records = contract.get("releaseRecords")
     if not isinstance(records, dict):
-        return
+        return None
     labels = require_string_list(
         records.get("draftLabels"),
         "releaseRecords.draftLabels",
@@ -1152,10 +1163,39 @@ def print_pending_release_record(logs: list[str], contract: dict[str, Any]) -> N
         for label in labels:
             prefix = f"{label}:"
             if line.startswith(prefix):
-                value = redact(line[len(prefix) :].strip(), contract)
-                print(f"Release record draft pending review: {value}")
-                print("Run the record command only after explicit record confirmation.")
-                return
+                value = line[len(prefix) :].strip()
+                if value:
+                    return value
+    return None
+
+
+def print_pending_release_record(logs: list[str], contract: dict[str, Any]) -> None:
+    value = release_record_draft_value(logs, contract)
+    if value is None:
+        return
+    print(f"Release record draft pending review: {redact(value, contract)}")
+    print("Use the record command only after explicit recovery confirmation.")
+
+
+def finalize_release_record_after_build(
+    project: Path,
+    logs: list[str],
+    contract: dict[str, Any],
+) -> None:
+    records = contract.get("releaseRecords")
+    if not isinstance(records, dict):
+        return
+    if records.get("autoRecordAfterBuildSuccess") is not True:
+        print_pending_release_record(logs, contract)
+        return
+    value = release_record_draft_value(logs, contract)
+    if value is None:
+        raise SystemExit(
+            "successful package job did not expose the required release record draft"
+        )
+    event_file = resolve_event_file(value)
+    complete_release_record_locally(project, contract, event_file)
+    print("Release record completed automatically after successful package job.")
 
 
 def run_contract_command(
@@ -1191,14 +1231,22 @@ def resolve_event_file(value: str) -> Path:
     return event_file
 
 
+def complete_release_record_locally(
+    project: Path,
+    contract: dict[str, Any],
+    event_file: Path,
+) -> None:
+    run_contract_command(project, contract, "tagCommand", event_file)
+    run_contract_command(project, contract, "appendCommand", event_file)
+
+
 def run_record(args: argparse.Namespace) -> int:
     if not args.confirm_record:
         raise SystemExit("refusing record without --confirm-record")
     project = Path(args.project).expanduser().resolve()
     contract = load_contract(project, args.contract)
     event_file = resolve_event_file(args.event_file)
-    run_contract_command(project, contract, "tagCommand", event_file)
-    run_contract_command(project, contract, "appendCommand", event_file)
+    complete_release_record_locally(project, contract, event_file)
     identity = contract.get("gitIdentity")
     if isinstance(identity, dict) and identity.get("tagPushRequired") is True:
         print(

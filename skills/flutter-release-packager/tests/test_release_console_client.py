@@ -335,6 +335,17 @@ class ValidateContractTest(unittest.TestCase):
         ):
             CLIENT.validate_contract(self.contract)
 
+    def test_release_records_auto_record_flag_must_be_boolean(self) -> None:
+        records = self.contract["releaseRecords"]
+        assert isinstance(records, dict)
+        records["autoRecordAfterBuildSuccess"] = "true"
+
+        with self.assertRaisesRegex(
+            SystemExit,
+            r"autoRecordAfterBuildSuccess must be a boolean",
+        ):
+            CLIENT.validate_contract(self.contract)
+
     def test_tag_push_command_must_use_declared_remote(self) -> None:
         identity = self.contract["gitIdentity"]
         records = self.contract["releaseRecords"]
@@ -598,6 +609,192 @@ class ReleaseLifecycleTest(unittest.TestCase):
                 commands[0][-2:],
                 ["--event-file", str(event_file.resolve())],
             )
+
+    def test_successful_build_auto_records_generated_draft(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            event_file = project / "release-record.json"
+            event_file.write_text("{}\n", encoding="utf-8")
+            contract = template_contract()
+            records = contract["releaseRecords"]
+            assert isinstance(records, dict)
+            records["autoRecordAfterBuildSuccess"] = True
+            output = io.StringIO()
+
+            with (
+                mock.patch.object(CLIENT, "run_contract_command") as run,
+                mock.patch("sys.stdout", output),
+            ):
+                CLIENT.finalize_release_record_after_build(
+                    project,
+                    [f"Release record: {event_file}"],
+                    contract,
+                )
+
+            self.assertEqual(
+                [call.args[2] for call in run.call_args_list],
+                ["tagCommand", "appendCommand"],
+            )
+            self.assertIn("completed automatically", output.getvalue())
+
+    def test_failed_build_or_requested_upload_never_finalizes_record(self) -> None:
+        for requested_upload in (False, True):
+            with self.subTest(requested_upload=requested_upload):
+                contract = template_contract()
+                records = contract["releaseRecords"]
+                targets = contract["targets"]
+                assert isinstance(records, dict)
+                assert isinstance(targets, list)
+                target = targets[0]
+                assert isinstance(target, dict)
+                records["autoRecordAfterBuildSuccess"] = True
+                args = SimpleNamespace(
+                    project=str(Path.cwd()),
+                    contract=CLIENT.DEFAULT_CONTRACT_PATH,
+                    target=target["id"],
+                    option=[],
+                    confirm_build=True,
+                    confirm_upload=requested_upload,
+                    poll_interval=0,
+                )
+                console = mock.Mock()
+                console.request_json.return_value = {
+                    "id": "failed-job",
+                    "running": False,
+                    "exitCode": 17,
+                    "logs": [],
+                }
+
+                with (
+                    mock.patch.object(CLIENT, "load_contract", return_value=contract),
+                    mock.patch.object(CLIENT, "validate_required_files"),
+                    mock.patch.object(CLIENT, "enforce_git_identity"),
+                    mock.patch.object(CLIENT, "enforce_dirty_policy"),
+                    mock.patch.object(
+                        CLIENT,
+                        "validate_upload_request",
+                        return_value=requested_upload,
+                    ),
+                    mock.patch.object(CLIENT, "ReleaseConsole", return_value=console),
+                    mock.patch.object(
+                        CLIENT,
+                        "finalize_release_record_after_build",
+                    ) as finalize,
+                ):
+                    self.assertEqual(CLIENT.run_build(args), 17)
+
+                finalize.assert_not_called()
+                console.close.assert_called_once()
+
+    def test_missing_required_evidence_never_finalizes_record(self) -> None:
+        contract = template_contract()
+        records = contract["releaseRecords"]
+        targets = contract["targets"]
+        assert isinstance(records, dict)
+        assert isinstance(targets, list)
+        target = targets[0]
+        assert isinstance(target, dict)
+        records["autoRecordAfterBuildSuccess"] = True
+        args = SimpleNamespace(
+            project=str(Path.cwd()),
+            contract=CLIENT.DEFAULT_CONTRACT_PATH,
+            target=target["id"],
+            option=[],
+            confirm_build=True,
+            confirm_upload=False,
+            poll_interval=0,
+        )
+        console = mock.Mock()
+        console.request_json.return_value = {
+            "id": "missing-evidence-job",
+            "running": False,
+            "exitCode": 0,
+            "logs": [],
+        }
+
+        with (
+            mock.patch.object(CLIENT, "load_contract", return_value=contract),
+            mock.patch.object(CLIENT, "validate_required_files"),
+            mock.patch.object(CLIENT, "enforce_git_identity"),
+            mock.patch.object(CLIENT, "enforce_dirty_policy"),
+            mock.patch.object(
+                CLIENT,
+                "validate_upload_request",
+                return_value=False,
+            ),
+            mock.patch.object(CLIENT, "ReleaseConsole", return_value=console),
+            mock.patch.object(
+                CLIENT,
+                "finalize_release_record_after_build",
+            ) as finalize,
+        ):
+            self.assertEqual(CLIENT.run_build(args), 1)
+
+        finalize.assert_not_called()
+        console.close.assert_called_once()
+
+    def test_auto_record_rejects_missing_draft_before_commands(self) -> None:
+        contract = template_contract()
+        records = contract["releaseRecords"]
+        assert isinstance(records, dict)
+        records["autoRecordAfterBuildSuccess"] = True
+
+        for logs in (
+            [],
+            ["Release record: /tmp/missing-release-record.json"],
+        ):
+            with (
+                self.subTest(logs=logs),
+                mock.patch.object(CLIENT, "run_contract_command") as run,
+                self.assertRaises(SystemExit),
+            ):
+                CLIENT.finalize_release_record_after_build(
+                    Path.cwd(),
+                    logs,
+                    contract,
+                )
+            run.assert_not_called()
+
+    def test_tag_failure_prevents_append(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            event_file = project / "release-record.json"
+            event_file.write_text("{}\n", encoding="utf-8")
+            contract = template_contract()
+            records = contract["releaseRecords"]
+            assert isinstance(records, dict)
+            records["autoRecordAfterBuildSuccess"] = True
+
+            with mock.patch.object(
+                CLIENT,
+                "run_contract_command",
+                side_effect=SystemExit("tag rejected draft"),
+            ) as run, self.assertRaisesRegex(SystemExit, r"tag rejected draft"):
+                CLIENT.finalize_release_record_after_build(
+                    project,
+                    [f"Release record: {event_file}"],
+                    contract,
+                )
+
+            self.assertEqual(run.call_count, 1)
+            self.assertEqual(run.call_args.args[2], "tagCommand")
+
+    def test_build_leaves_draft_pending_when_auto_record_is_disabled(self) -> None:
+        contract = template_contract()
+        output = io.StringIO()
+
+        with (
+            mock.patch.object(CLIENT, "run_contract_command") as run,
+            mock.patch("sys.stdout", output),
+        ):
+            CLIENT.finalize_release_record_after_build(
+                Path.cwd(),
+                ["Release record: /tmp/release-record.json"],
+                contract,
+            )
+
+        run.assert_not_called()
+        self.assertIn("pending review", output.getvalue())
 
     def test_record_forwards_opaque_draft_to_project_commands(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

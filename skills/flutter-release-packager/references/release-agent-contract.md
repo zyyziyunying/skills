@@ -90,10 +90,18 @@ The `evidence` object may define any `*Labels` arrays. Common labels are `artifa
 When the `releaseRecords` key is present, its value must be an object; explicit
 `null` is invalid. The object should define:
 
+- `autoRecordAfterBuildSuccess`: optional boolean. When `true`, a successful
+  confirmed build automatically runs `tagCommand` and then `appendCommand`.
+  The full requested job, including a requested upload, must finish successfully
+  before either command runs. Omitted or `false` keeps the draft pending for the
+  manual recovery flow.
 - `draftLabels`: log labels that expose the generated record draft.
 - `tagCommand`: project-owned command that reads `--event-file`, creates or
   verifies an annotated local package tag when needed, and otherwise exits
-  successfully without a tag.
+  successfully without a tag. Before creating a tag, it must run every
+  non-mutating append precondition it can detect, including duplicate event-id
+  content and append-order checks, so a draft that append would reject does not
+  leave an orphan package tag.
 - `appendCommand`: idempotently appends the draft and may verify a package tag
   when the project requires one.
 - `pushCommand`: required when `gitIdentity.tagPushRequired=true`; it reads
@@ -107,9 +115,11 @@ When the `releaseRecords` key is present, its value must be an object; explicit
 `pushCommand` must select that remote explicitly.
 
 The helper treats `--event-file` as opaque: its format and tag-presence logic
-belong to project-owned commands, not a generic helper field. It uses separate
-`record --confirm-record` and `push-tag --confirm-push` commands. A build or
-Store-upload confirmation never authorizes either Git mutation.
+belong to project-owned commands, not a generic helper field. A contract may
+make local tag/append closure part of the confirmed successful build through
+`autoRecordAfterBuildSuccess`; otherwise `record --confirm-record` remains the
+manual recovery path. Remote tag push always uses `push-tag --confirm-push` and
+is never inferred from build, record, Store upload, or deployment confirmation.
 
 ## Rules
 
@@ -133,8 +143,9 @@ Store-upload confirmation never authorizes either Git mutation.
 - Do not include absolute machine-local secret paths in the contract.
 - Keep upload behavior explicit. Uploads should require a second confirmation unless the project rules clearly say otherwise.
 - Treat `block` as absolute. Do not add a generic user override for a project-declared dirty-worktree block.
-- Keep project-owned tag/append and remote tag push separately confirmable.
-  Required remote push must never run automatically.
+- Keep remote tag push separately confirmable. Project-owned local tag/append
+  may run automatically only when the contract explicitly enables successful
+  build closure. Required remote push must never run automatically.
 - Fail closed for unknown schema versions, unknown options, malformed option/upload/evidence schema, and invalid secret redaction regex patterns.
 - Keep the version source explicit. If `pubspec.yaml` owns the release version, forbid ad hoc version overrides.
 - Keep release-console protocols in the project repo, not in a public generic skill, when the protocol is project-specific.

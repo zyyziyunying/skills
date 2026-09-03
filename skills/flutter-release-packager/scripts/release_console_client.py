@@ -1193,9 +1193,17 @@ def finalize_release_record_after_build(
         raise SystemExit(
             "successful package job did not expose the required release record draft"
         )
-    event_file = resolve_event_file(value)
+    event_file = resolve_event_file(value, base_dir=project)
     complete_release_record_locally(project, contract, event_file)
     print("Release record completed automatically after successful package job.")
+    identity = contract.get("gitIdentity")
+    if isinstance(identity, dict) and identity.get("tagPushRequired") is True:
+        print(
+            "Remote package tag push remains required. Use the separately "
+            "confirmed push-tag flow with --event-file "
+            + redact(str(event_file), contract)
+            + "."
+        )
 
 
 def run_contract_command(
@@ -1224,8 +1232,11 @@ def run_contract_command(
         )
 
 
-def resolve_event_file(value: str) -> Path:
-    event_file = Path(value).expanduser().resolve()
+def resolve_event_file(value: str, *, base_dir: Path | None = None) -> Path:
+    event_file = Path(value).expanduser()
+    if not event_file.is_absolute() and base_dir is not None:
+        event_file = base_dir / event_file
+    event_file = event_file.resolve()
     if not event_file.is_file():
         raise SystemExit(f"release record draft not found: {event_file}")
     return event_file

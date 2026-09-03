@@ -637,6 +637,55 @@ class ReleaseLifecycleTest(unittest.TestCase):
             )
             self.assertIn("completed automatically", output.getvalue())
 
+    def test_auto_record_resolves_relative_draft_from_project(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            event_file = project / "build" / "release-record.json"
+            event_file.parent.mkdir()
+            event_file.write_text("{}\n", encoding="utf-8")
+            contract = template_contract()
+            records = contract["releaseRecords"]
+            assert isinstance(records, dict)
+            records["autoRecordAfterBuildSuccess"] = True
+
+            with mock.patch.object(CLIENT, "run_contract_command") as run:
+                CLIENT.finalize_release_record_after_build(
+                    project,
+                    ["Release record: build/release-record.json"],
+                    contract,
+                )
+
+            self.assertEqual(run.call_count, 2)
+            self.assertEqual(run.call_args_list[0].args[3], event_file.resolve())
+
+    def test_auto_record_reports_required_remote_tag_push(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary)
+            event_file = project / "release-record.json"
+            event_file.write_text("{}\n", encoding="utf-8")
+            contract = template_contract()
+            records = contract["releaseRecords"]
+            identity = contract["gitIdentity"]
+            assert isinstance(records, dict)
+            assert isinstance(identity, dict)
+            records["autoRecordAfterBuildSuccess"] = True
+            identity["tagPushRequired"] = True
+            output = io.StringIO()
+
+            with (
+                mock.patch.object(CLIENT, "run_contract_command"),
+                mock.patch("sys.stdout", output),
+            ):
+                CLIENT.finalize_release_record_after_build(
+                    project,
+                    ["Release record: release-record.json"],
+                    contract,
+                )
+
+            self.assertIn("Remote package tag push remains required", output.getvalue())
+            self.assertIn("separately confirmed push-tag flow", output.getvalue())
+            self.assertIn(str(event_file.resolve()), output.getvalue())
+
     def test_failed_build_or_requested_upload_never_finalizes_record(self) -> None:
         for requested_upload in (False, True):
             with self.subTest(requested_upload=requested_upload):

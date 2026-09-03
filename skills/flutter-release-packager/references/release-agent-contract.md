@@ -95,7 +95,8 @@ When the `releaseRecords` key is present, its value must be an object; explicit
   The full requested job, including a requested upload, must finish successfully
   before either command runs. Omitted or `false` keeps the draft pending for the
   manual recovery flow.
-- `draftLabels`: log labels that expose the generated record draft.
+- `draftLabels`: log labels that expose the generated record draft. During
+  automatic closure, relative draft paths are resolved from the project root.
 - `tagCommand`: project-owned command that reads `--event-file`, creates or
   verifies an annotated local package tag when needed, and otherwise exits
   successfully without a tag. Before creating a tag, it must run every

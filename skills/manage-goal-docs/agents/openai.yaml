@@ -1,4 +1,0 @@
-interface:
-  display_name: "Goal Docs"
-  short_description: "Create flexible, scoped goal documentation"
-  default_prompt: "Use $manage-goal-docs to organize this goal with a concise overview and clearly owned supporting documents."

@@ -1,6 +1,6 @@
 ---
 name: goal-first-development
-description: "Use only when the user explicitly invokes $goal-first-development. Own proportionate goal-driven delivery from goal.html: establish enough of the behavior contract and correctness sources to act safely, choose validation based on actual risk, use $independent-verifier when it adds meaningful confidence, implement within scope, and close with honest evidence."
+description: "Use only when the user explicitly invokes $goal-first-development. Deliver a confirmed goal, including concise goal documentation, with proportionate contracts and validation."
 ---
 
 # Goal-First Development
@@ -11,17 +11,34 @@ Deliver the smallest change that achieves a confirmed goal. Keep `goal.html` as
 the stable entry and use only as much documentation, approval, delegation, and
 validation ceremony as the task actually needs.
 
+Goal documentation is part of this workflow, not a separate skill.
+
 Use this skill only when the user explicitly invokes
 `$goal-first-development`. Read-only discussion does not activate it.
 
 ## Authority
 
 - Follow user instructions, repository rules, and declared project fact sources.
-- Use `$manage-goal-docs` for goal creation and fact ownership when available.
-  Otherwise use an identified existing goal, or ask before creating a minimal
-  `./goals/.../goal.html` fallback.
+- Create and update goal documentation with this skill's helper and rules.
+- Put global or long-lived records in the project source selected by
+  `$codex-project-harness` (usually `docs/`); keep short-lived task context in
+  the goal. An explicit user path wins.
 - This workflow owns the goal contract and status. Other agents return work or
   evidence; they do not silently redefine the goal or mark it done.
+
+## Goal Documentation
+
+For a new goal, use the bundled helper from this skill:
+
+```bash
+python3 "<skill-dir>/scripts/create_goal.py" \
+  --slug subscription-global-analytics \
+  "一句话目标内容"
+```
+
+It creates `./goals/<date>-<slug>/goal.html` and shared goal CSS when needed.
+Keep `goal.html` to the goal, status, conclusion, blocker, next action, and
+links; give detailed goal-specific facts one clear owner document.
 
 ## Establish Enough Contract
 

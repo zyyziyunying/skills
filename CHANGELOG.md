@@ -4,6 +4,11 @@ All notable changes to this repository will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- Simplified goal/project documentation routing: global or long-lived records
+  use project documentation; short-lived task context stays with the goal.
+
 ### Added
 
 - Added `session-work-report` for concise, evidence-backed session recaps,
@@ -21,6 +26,17 @@ All notable changes to this repository will be documented in this file.
 
 ### Breaking Changes
 
+- Merged `manage-goal-docs` into `goal-first-development` and removed the
+  standalone `$manage-goal-docs` entry.
+  - Affected API/behavior: `skills/manage-goal-docs`, its helper path, and the
+    `$manage-goal-docs` invocation no longer exist. Goal creation and updates
+    now belong to `$goal-first-development`.
+  - Affected callers: prompts, automation, local discovery links, or scripts
+    that invoke the removed skill or its former `create_goal.py` path.
+  - Migration: invoke `$goal-first-development`; direct helper callers should
+    use `skills/goal-first-development/scripts/create_goal.py` instead.
+  - Validation/docs: README lists only the consolidated workflow. Refresh local
+    discovery links with `./scripts/link-local-skills.sh`.
 - Removed `patrol-e2e` as an installable skill.
   - Affected API/behavior: `skills/patrol-e2e` and the explicit
     `$patrol-e2e` invocation no longer exist.

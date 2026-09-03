@@ -1,6 +1,6 @@
 interface:
   display_name: "Goal-First Delivery"
-  short_description: "Deliver goals with proportionate contracts and validation"
-  default_prompt: "Use $goal-first-development to deliver this outcome from goal.html with proportionate documentation, validation, and evidence."
+  short_description: "Deliver goals with concise docs and validation"
+  default_prompt: "Use $goal-first-development to create or update this goal, including concise goal docs, validation, and evidence."
 policy:
   allow_implicit_invocation: false

@@ -53,11 +53,10 @@ npx skills add zyyziyunying/skills --all
 | `flutter-implement-json-serialization` | Choose and implement project-aware generated, hybrid, or manual Flutter JSON serialization. |
 | `flutter-release-packager` | Guide Flutter release packaging with preflight checks and artifact evidence. |
 | `git-commit-helper` | Plan and create intentional atomic git commits. |
-| `goal-first-development` | Goal-first delivery with proportionate contracts, validation, and evidence. |
+| `goal-first-development` | Goal workflow with concise goal docs, contracts, validation, and evidence. |
 | `humanizer` | Manual-only English prose humanizer for removing AI-writing tells. |
 | `independent-verifier` | Focused review, bug triage, test design, and test verification with proportionate independence. |
 | `local-image-to-webp` | Convert local images to WebP while preserving originals. |
-| `manage-goal-docs` | Create and maintain goal folders with a concise `goal.html` overview and clearly owned scoped documents. |
 | `playwright` | Browser automation through Playwright CLI and wrapper scripts. |
 | `playwright-interactive` | Persistent Playwright browser and Electron debugging. |
 | `r8-analyzer` | Audit Android R8 configuration, analyzer reports, and keep-rule risk. |
@@ -69,9 +68,9 @@ npx skills add zyyziyunying/skills --all
 Use `$goal-first-development` as the normal entry for goal-driven software
 delivery. It owns `goal.html`, validation-risk classification, the frozen
 behavior contract, component routing, evidence backfill, and final goal status.
-Install it with `manage-goal-docs` and `independent-verifier` for the full flow;
-when a companion is unavailable, the owner can use a minimal goal document or
-the best direct validation and disclose the limitation.
+Install it with `codex-project-harness` and `independent-verifier` for the full
+flow; when a companion is unavailable, the owner can use a minimal goal document
+or the best direct validation and disclose the limitation.
 
 Depending on the confirmed risk, it delegates bug-value review, independent test
 design or verification, and final review through `$independent-verifier`. The

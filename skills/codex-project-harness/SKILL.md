@@ -132,6 +132,12 @@ Keep one owner for each mutable fact and replace duplicated detail with links.
 - `LOCAL.md`, `GENERATION.md`, and `PACKAGING.md` own their operational domains
   when present. Keep secrets out of committed docs.
 
+## Goal Records
+
+Put global or long-lived records in the project documentation source (usually
+`docs/`). Put short-lived, task-specific context in the goal. Let `AGENTS.md`
+name the project source when needed; an explicit user target wins.
+
 ## Project Variants
 
 For Flutter apps, packages, plugins, examples, or workspaces, read

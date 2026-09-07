@@ -1,0 +1,89 @@
+# Language And Grammar Patterns
+
+These are editing examples, not authorship tests or banned-word rules. Apply only when the pattern weakens the supplied text; preserve its facts, voice, uncertainty, and useful structure.
+
+### 7. Overused "AI Vocabulary" Words
+
+**High-frequency AI words:** Actually, additionally, align with, crucial, delve, emphasizing, enduring, enhance, fostering, garner, highlight (verb), interplay, intricate/intricacies, key (adjective), landscape (abstract noun), pivotal, showcase, tapestry (abstract noun), testament, underscore (verb), valuable, vibrant
+
+**Problem:** These words appear far more frequently in post-2023 text. They often co-occur.
+
+**Before:**
+> Additionally, a distinctive feature of Somali cuisine is the incorporation of camel meat. An enduring testament to Italian colonial influence is the widespread adoption of pasta in the local culinary landscape, showcasing how these dishes have integrated into the traditional diet.
+
+**After:**
+> Somali cuisine includes camel meat and pasta, which became widespread under Italian colonial influence.
+
+
+### 8. Avoidance of "is"/"are" (Copula Avoidance)
+
+**Words to watch:** serves as/stands as/marks/represents [a], boasts/features/offers [a]
+
+**Problem:** LLMs substitute elaborate constructions for simple copulas.
+
+**Before:**
+> Gallery 825 serves as LAAA's exhibition space for contemporary art. The gallery features four separate spaces and boasts over 3,000 square feet.
+
+**After:**
+> Gallery 825 is LAAA's exhibition space for contemporary art. The gallery has four spaces covering over 3,000 square feet.
+
+
+### 9. Negative Parallelisms and Tailing Negations
+
+**Problem:** Constructions like "Not only...but..." or "It's not just about..., it's..." are overused. So are clipped tailing-negation fragments such as "no guessing" or "no wasted motion" tacked onto the end of a sentence instead of written as a real clause.
+
+**Before:**
+> It's not just about the beat riding under the vocals; it's part of the aggression and atmosphere. It's not merely a song, it's a statement.
+
+**After:**
+> The beat under the vocals adds to the song's aggression and atmosphere, making it feel like a statement.
+
+**Before (tailing negation):**
+> The options come from the selected item, no guessing.
+
+**After:**
+> The options come from the selected item without forcing the user to guess.
+
+
+### 10. Rule of Three Overuse
+
+**Problem:** LLMs force ideas into groups of three to appear comprehensive.
+
+**Before:**
+> The event features keynote sessions, panel discussions, and networking opportunities. Attendees can expect innovation, inspiration, and industry insights.
+
+**After:**
+> The event includes keynote talks and panel discussions, with time for networking.
+
+
+### 11. Elegant Variation (Synonym Cycling)
+
+**Problem:** Unnecessary synonym cycling can obscure that repeated terms refer to the same subject.
+
+**Before:**
+> The protagonist faces many challenges. The main character must overcome obstacles. The central figure eventually triumphs. The hero returns home.
+
+**After:**
+> The protagonist faces many challenges but eventually triumphs and returns home.
+
+
+### 12. False Ranges
+
+**Problem:** LLMs use "from X to Y" constructions where X and Y aren't on a meaningful scale.
+
+**Before:**
+> Our journey through the universe has taken us from the singularity of the Big Bang to the grand cosmic web, from the birth and death of stars to the enigmatic dance of dark matter.
+
+**After:**
+> The discussion covers the Big Bang, the cosmic web, the birth and death of stars, and dark matter.
+
+
+### 13. Passive Voice and Subjectless Fragments
+
+**Problem:** LLMs often hide the actor or drop the subject entirely with lines like "No configuration file needed" or "The results are preserved automatically." Rewrite these when active voice makes the sentence clearer and more direct.
+
+**Before:**
+> No configuration file needed. The results are preserved automatically.
+
+**After:**
+> You do not need a configuration file. The system preserves the results automatically.

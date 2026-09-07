@@ -1,6 +1,6 @@
 ---
 name: independent-verifier
-description: "Provide a focused second-pass review, bug-validity and severity triage, pre-implementation test design, or post-implementation test verification. Use when the user invokes $independent-verifier, asks for an independent review or test verification, asks whether a reported bug is real or worth fixing, or when an owner workflow delegates one of these modes. Prefer a fresh no-context subagent when useful, but allow a clearly labeled direct fallback when delegation is unavailable or disproportionate."
+description: "Review scoped artifacts, triage bug validity, or design and verify behavior-focused tests. Use for explicit independent review, bug-value assessment, test verification, or a delegated verification checkpoint."
 ---
 
 # Independent Verifier

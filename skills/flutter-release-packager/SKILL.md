@@ -17,13 +17,23 @@ Before packaging, read the nearest `AGENTS.md`, then `SPEC.md`, `PACKAGING.md`, 
 
 Read `references/release-agent-contract.md` when `PACKAGING.md` links a release agent contract, when creating one for repeatable AI-assisted release packaging, or when interpreting a contract-backed release console; after reading, identify the contract fields that define allowed targets, required parameters, command/status endpoints, upload semantics, secret redaction, and evidence labels before asking for packaging parameters or running helper scripts.
 
+## Authorization And Execution Boundaries
+
+Use explicit authorization already provided in the conversation for the same
+action and parameters. Build, upload, record, and remote tag push are distinct
+actions, but a user can authorize several in one request. Ask only for missing
+authorization or a material change of target, inputs, or external effect.
+Helper confirmation flags attest that authorization exists; they do not require
+an additional conversational round. Skill invocation alone does not authorize
+an unspecified upload or remote push.
+
 ## Hard Rules
 
 - Do not run a build until the target, version source, worktree policy, signing/export posture, environment inputs, upload behavior, and expected evidence have been confirmed.
-- Treat store upload, production deployment, account mutation, or third-party service submission as external-state mutation. Require a separate explicit confirmation for that step.
+- Treat store upload, production deployment, account mutation, or third-party service submission as external-state mutation. Require explicit authorization for that action; reuse it when already provided.
 - Do not invent signing credentials, profiles, bundle identifiers, package names, or environment values.
 - Do not paste secret values, private key paths, tokens, passwords, or full signing credential paths into the final answer.
-- Apply the project contract's dirty-worktree policy literally. `block` and the store side of `block-store-release` are not user-overridable; stop and require a clean worktree.
+- The helper enforces the project contract's dirty-worktree policy, including `block` and the store side of `block-store-release`. If it blocks the requested build, report the concrete prerequisite. Do not bypass the helper, clean user work, or alter the contract merely to proceed; an explicit request to revise project policy is a separate scoped change.
 - Prefer the project-owned `PACKAGING.md` plus release agent contract over manual UI interaction.
 - If `PACKAGING.md` is missing or does not identify a reliable release path, stop before building and report the missing project contract instead of improvising a store package.
 
@@ -39,7 +49,7 @@ Read `references/release-agent-contract.md` when `PACKAGING.md` links a release 
    - Report project root, branch, commit, version source, dirty status, available targets, required input files, and known build/output directories.
    - If the contract defines a release-console status endpoint, prefer `scripts/release_console_client.py status` over hand-written discovery.
 
-3. Ask for required parameters.
+3. Resolve required parameters from the request and project facts; ask only for material missing values.
    - Target: Android APK, Android AAB, iOS IPA, internal QA, Play testing, Play production, ad hoc iOS, TestFlight, or App Store.
    - Purpose/audience: local QA, internal testing, closed testing, production update, store upload, or artifact-only handoff.
    - Version: confirm the documented source, usually `pubspec.yaml` `version:`, CI build number, or a project release file.
@@ -50,7 +60,7 @@ Read `references/release-agent-contract.md` when `PACKAGING.md` links a release 
    - Artifact destination and validation expectation: local artifact only, install/run validation, store upload, or handoff summary.
 
 4. Explain the final summary before build.
-   Include target, purpose, version source/value, source branch/ref when present plus commit, dirty decision plus dirty files, required input files, env posture, signing/export settings, upload setting, artifact destination, and expected evidence. Ask for a clear build confirmation. Ask separately for external upload confirmation when applicable.
+   Include target, purpose, version source/value, source branch/ref when present plus commit, dirty decision plus dirty files, required input files, env posture, signing/export settings, upload setting, artifact destination, and expected evidence. Proceed when those actions and parameters are already authorized; otherwise ask for the missing build or upload authorization.
 
 5. Launch the build through the documented path.
    - Use the project release command, CI workflow, or `scripts/release_console_client.py build` exactly as documented.
@@ -64,8 +74,8 @@ Read `references/release-agent-contract.md` when `PACKAGING.md` links a release 
 7. Close the local package record when the project defines `releaseRecords`.
    - Summarize the target, version, Git identity, artifact, manifest, symbols, upload state, and generated record draft.
    - When `releaseRecords.autoRecordAfterBuildSuccess=true`, the confirmed build authorizes the helper to run the project-owned tag and append commands automatically after the full requested job succeeds. Do not ask for a routine second confirmation. A failed build, failed requested upload, missing evidence, or invalid draft must not record or tag the package.
-   - When automatic closure is absent or false, let the user review the draft and require a separate record confirmation before running the recovery `record` command.
-   - When the project requires remote tags, a separate push confirmation authorizes `push-tag`. Never infer push permission from build, record, Store upload, or deployment confirmation.
+   - When automatic closure is absent or false, prepare the draft for review and run the recovery `record` command only when record authorization has been provided.
+   - When the project requires remote tags, explicit remote tag push authorization permits `push-tag`, including authorization already supplied in the request. Never infer push permission from build, record, Store upload, or deployment confirmation.
    - Report Store upload and any remaining external/device validation separately.
 
 ## Release Agent Contract
@@ -107,7 +117,7 @@ python3 /path/to/flutter-release-packager/scripts/release_console_client.py buil
   --confirm-build
 ```
 
-Add `--confirm-upload` only after separate upload confirmation. The helper reads project facts from the contract, starts the project release console, calls the documented endpoints, redacts configured secrets, streams job logs, and prints evidence labels configured by the project.
+Add `--confirm-upload` only when the upload is explicitly authorized. The helper reads project facts from the contract, starts the project release console, calls the documented endpoints, redacts configured secrets, streams job logs, and prints evidence labels configured by the project.
 
 For recovery of an earlier valid draft, or for a project that does not enable
 automatic record closure:
@@ -119,7 +129,8 @@ python3 /path/to/flutter-release-packager/scripts/release_console_client.py reco
   --confirm-record
 ```
 
-When the project requires the package tag on its approved remote, confirm that external action separately:
+When the project requires the package tag on its approved remote, use existing
+explicit remote-push authorization or request it if missing:
 
 ```bash
 python3 /path/to/flutter-release-packager/scripts/release_console_client.py push-tag \

@@ -27,23 +27,10 @@ For each generator, document:
 
 ## Command Boundary
 
-Default allowed:
-
-- Static reading and project-owned code or documentation edits.
-- Generator dry-run or validation commands that do not write outside the
-  project, when documented above.
-- [Fast deterministic lint, schema, or targeted test commands.]
-
-Conditionally allowed when `AGENTS.md`, `TEST.md`, `LOCAL.md`, this document,
-or the current user request explicitly allows the exact command:
-
-- Documented generators that modify project-owned generated outputs.
-- [Integration, preview, browser, container, or expensive validation.]
-
-Requires separate confirmation:
-
-- Release, deployment, signing, publishing, or production changes.
-- Account, payment, private-data, real-device, or mutable external-state flows.
+[Record only project-specific execution constraints and link to the authoritative
+source for shared rules. Derive the boundary from applicable project instructions
+and user authorization; do not require repeat approval for already authorized
+steps. Identify any operation whose scope or required authorization is unresolved.]
 
 ## Change Rules
 

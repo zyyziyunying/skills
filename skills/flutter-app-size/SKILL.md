@@ -1,6 +1,6 @@
 ---
 name: flutter-app-size
-description: Measure, analyze, and reduce Flutter release artifact size for APK, Android App Bundle, IPA, and desktop builds. Use when the user asks about Flutter app size, build size, download size, App Size Tool reports, `--analyze-size`, `--split-debug-info`, obfuscation, asset/package bloat, iOS App Thinning, or size regression comparisons.
+description: Measure and reduce Flutter release artifact size, analyze size reports, and compare regressions while distinguishing package, download, and installed size.
 ---
 
 # Flutter App Size
@@ -11,9 +11,16 @@ Use this skill to establish a reproducible release-size baseline, inspect the ge
 
 ## Command Boundary
 
-Flutter size work usually requires release builds. Before running any `flutter build` command, confirm that the current user request or project instructions explicitly allow that exact build target and any requested build flags. If the project has `AGENTS.md`, `TEST.md`, `LOCAL.md`, release docs, signing notes, or CI packaging guidance, read the nearest relevant file before building.
+Read the relevant project build, signing, and CI guidance before measuring.
+Choose the target and flags from project facts and the user's goal. Apply the
+existing project and user authorization without repeat approval for covered
+builds or local exports. Ask only when a material choice or required authorization
+remains unresolved.
 
-Never run store submission, account, payment, production distribution, provisioning-profile mutation, certificate mutation, or credential-handling steps. For iOS App Thinning, default to providing the Xcode export steps only. Run a local non-submission IPA/archive/App Thinning workflow only when the user explicitly authorizes that exact action and the project guidance allows it; do not change signing assets, upload to App Store Connect, or operate store accounts. If the task turns into release packaging or signing ownership, hand off to `flutter-release-packager`.
+Size measurement does not itself authorize store submission, production
+distribution, account operations, or changes to signing assets. If the user also
+requests release packaging or signing work, follow the project release workflow;
+use `flutter-release-packager` when available and relevant.
 
 ## Triage
 
@@ -24,7 +31,7 @@ Identify these facts before measuring or changing code:
 3. Goal: establish baseline, investigate a regression, reduce below a threshold, compare branches, or prepare release evidence.
 4. Constraints: available SDKs, signing/export requirements, CI-only builds, and whether obfuscation or split debug info is acceptable.
 
-If any missing fact can change the measurement method, exact build target, build flags, signing/export requirements, SDK availability, CI-only constraint, or permission to run a release build, ask a concise question before running build commands.
+Resolve these from project files and existing artifacts first. Ask only for a missing fact that prevents a reliable measurement or leaves a material user choice unresolved; continue independent report inspection while it is pending.
 
 ## Measurement Workflow
 
@@ -55,14 +62,14 @@ For iOS, do not rely on the `.app` bundle size as the end-user download estimate
 flutter build ipa --export-method development
 ```
 
-Then use Xcode distribution/export to select all compatible device variants, strip Swift symbols when appropriate, export the IPA, and inspect `App Thinning Size Report.txt`. Treat these as instructions unless the user explicitly authorizes local execution. Even with authorization, keep the workflow non-submission and do not mutate signing assets or accounts.
+Then use Xcode distribution/export to select all compatible device variants, strip Swift symbols when appropriate, export the IPA, and inspect `App Thinning Size Report.txt`. Use the project export configuration and existing authorization for local execution. If signing or export setup is unavailable, report that limitation and provide the remaining export steps.
 
 ## Android Download And Install Estimates
 
 For Android, distinguish local artifacts from user-facing estimates:
 
 - Local APK/AAB sizes and `--analyze-size` reports are useful for breakdowns, regressions, and relative comparisons.
-- Accurate download and install estimates require Play Console app size reporting or a user-provided Play Console report. Do not upload binaries, operate Play Console, or change store settings from this skill unless the user explicitly moves the task to a release-packaging workflow.
+- Accurate download and install estimates require Play Console app size reporting or a user-provided Play Console report. Use authorized read-only reporting access or a provided report; measurement alone does not authorize uploading binaries or changing store settings.
 - When Play Console data is unavailable, report the local artifact size and code-size findings clearly as local evidence, not as the expected end-user download size.
 
 ## Reduction Playbook

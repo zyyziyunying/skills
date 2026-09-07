@@ -1,9 +1,6 @@
 ---
 name: dart-add-unit-test
 description: Write and organize unit tests for functions, methods, and classes using `package:test`. Use when creating new logic or fixing bugs to ensure code remains correct and regression-free.
-metadata:
-  model: models/gemini-3.1-pro-preview
-  last_modified: Fri, 24 Apr 2026 15:07:58 GMT
 ---
 # Dart Unit Tests
 
@@ -13,13 +10,12 @@ metadata:
   `_test.dart`. Put integration tests in `integration_test/`.
 - Use `package:test/test.dart` for Dart; Flutter tests may use
   `package:flutter_test/flutter_test.dart`.
-- For a pure Dart package, run targeted `dart test test/...`. For Flutter,
-  `dart analyze`, `flutter analyze`, and targeted `flutter test test/...`
-  are the default command tier.
-- `dart test integration_test`, `flutter test integration_test`, preview
-  checks, and `flutter run -d web-server` need explicit project or user
-  permission. Device or simulator install/run, `flutter build`, release work,
-  store/account/payment, and mutable backend flows need separate confirmation.
+- For a pure Dart package, use targeted `dart test test/...`; for Flutter,
+  use targeted `flutter test test/...` with relevant analysis checks.
+- Derive validation commands and execution constraints from the applicable
+  project instructions and user request. Continue already authorized steps
+  without repeat approval; do not expand unit-test work into unrelated release
+  or external-state operations.
 
 ## Test Oracle
 

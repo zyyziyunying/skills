@@ -24,25 +24,23 @@ Avoid tests whose only value is:
 
 - Correctness sources: [SPEC sections, API/domain contracts, platform rules, or
   confirmed user-visible behavior that define expected results.]
-- L1 validation: [Developer checks and deterministic suite required for
-  mechanical or presentation-only work.]
-- L2 validation: [Independent test charter, completed independent test
-  verification, and final independent review required for ordinary behavior
-  changes and bug fixes.]
-- L3 validation: [All L2 gates plus a user-approved oracle and the applicable
-  E2E, device, security, or manual evidence required for high-risk work.]
+- Required validation: [Project-defined checks and evidence, scaled to the
+  behavior, risk, and available environment.]
+- Independent verification: [Whether and when the project requires an
+  independent charter, test verification, review, or additional E2E/device
+  evidence. Omit if no such policy applies.]
 
 Do not use the current implementation output as the sole expected value. Treat
 existing tests as evidence that may be stale or coupled to implementation.
 
-## Agent Test Ownership
+## Agent Test Ownership (When Applicable)
 
 - Developer agents may modify: [product paths and focused developer-test paths.]
 - Independent test verifiers may modify: [explicit test, fixture, and
   test-support paths only.]
 - Independent test verifiers must not modify: [product code, goal semantics, or
   assertions merely to obtain a pass.]
-- Independent reviewers are read-only and receive no parent conclusions.
+- Independent reviewers: [Project-defined scope and required source context.]
 
 ## Bug-Fix Evidence
 
@@ -61,21 +59,10 @@ For confirmed bugs, record:
 
 ## Agent Boundary
 
-Default allowed:
-
-- [Static reading and project-owned code or documentation edits.]
-- [Fast deterministic lint, type, schema, or targeted test commands.]
-
-Conditionally allowed when `AGENTS.md`, this document, another authoritative
-project source, or the current user request explicitly allows the exact action:
-
-- [Integration, preview, browser, simulator, container, or expensive suite.]
-- [Commands that create or refresh project-owned generated outputs.]
-
-Requires separate confirmation:
-
-- [Release, deployment, signing, publishing, production, or external messaging.]
-- [Account, payment, private-data, real-device, or mutable external-state flows.]
+[Record only project-specific execution constraints and link to the authoritative
+source for shared rules. Derive the boundary from applicable project instructions
+and user authorization; do not require repeat approval for already authorized
+steps. Identify any operation whose scope or required authorization is unresolved.]
 
 ## Bug Reports
 

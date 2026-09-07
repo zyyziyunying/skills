@@ -4,144 +4,39 @@ description: "Use when the task requires automating a real browser from the term
 ---
 
 
-# Playwright CLI Skill
+# Playwright CLI
 
-Drive a real browser from the terminal using `playwright-cli`. Prefer the bundled wrapper script so the CLI works even when it is not globally installed.
-Treat this skill as CLI-first automation. Do not pivot to `@playwright/test` unless the user explicitly asks for test files.
+Drive a real browser with `playwright-cli`, preferably through the bundled wrapper. Use CLI automation for this workflow; create `@playwright/test` files only when the user requests them.
 
-## Prerequisite check (required)
+## Runtime and path
 
-Before proposing commands, check whether `npx` is available (the wrapper depends on it):
+Check `command -v npx` before using the wrapper. If missing, inspect available runtimes or a supported browser tool before requiring installation. Use any alternative tool through its own documented API. If no compatible runtime exists, explain the missing Node.js/npm prerequisite; do not prescribe a global CLI install as necessary.
 
-```bash
-command -v npx >/dev/null 2>&1
-```
-
-If it is not available, pause and ask the user to install Node.js/npm (which provides `npx`). Provide these steps verbatim:
+Resolve `PWCLI` to this skill's actual installed location, for example:
 
 ```bash
-# Verify Node/npm are installed
-node --version
-npm --version
-
-# If missing, install Node.js/npm, then:
-npm install -g @playwright/cli@latest
-playwright-cli --help
-```
-
-Once `npx` is present, proceed with the wrapper script. A global install of `playwright-cli` is optional.
-
-## Skill path (set once)
-
-```bash
-export CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
-export PWCLI="$CODEX_HOME/skills/playwright/scripts/playwright_cli.sh"
-```
-
-User-scoped skills install under `$CODEX_HOME/skills` (default: `~/.codex/skills`).
-
-## Quick start
-
-Use the wrapper script:
-
-```bash
-"$PWCLI" open https://playwright.dev --headed
-"$PWCLI" snapshot
-"$PWCLI" click e15
-"$PWCLI" type "Playwright"
-"$PWCLI" press Enter
-"$PWCLI" screenshot
-```
-
-If the user prefers a global install, this is also valid:
-
-```bash
-npm install -g @playwright/cli@latest
-playwright-cli --help
-```
-
-## Core workflow
-
-1. Open the page.
-2. Snapshot to get stable element refs.
-3. Interact using refs from the latest snapshot.
-4. Re-snapshot after navigation or significant DOM changes.
-5. Capture artifacts (screenshot, pdf, traces) when useful.
-
-Minimal loop:
-
-```bash
-"$PWCLI" open https://example.com
-"$PWCLI" snapshot
-"$PWCLI" click e3
-"$PWCLI" snapshot
-```
-
-## When to snapshot again
-
-Snapshot again after:
-
-- navigation
-- clicking elements that change the UI substantially
-- opening/closing modals or menus
-- tab switches
-
-Refs can go stale. When a command fails due to a missing ref, snapshot again.
-
-## Recommended patterns
-
-### Form fill and submit
-
-```bash
-"$PWCLI" open https://example.com/form
-"$PWCLI" snapshot
-"$PWCLI" fill e1 "user@example.com"
-"$PWCLI" fill e2 "password123"
-"$PWCLI" click e3
-"$PWCLI" snapshot
-```
-
-### Debug a UI flow with traces
-
-```bash
-"$PWCLI" open https://example.com --headed
-"$PWCLI" tracing-start
-# ...interactions...
-"$PWCLI" tracing-stop
-```
-
-### Multi-tab work
-
-```bash
-"$PWCLI" tab-new https://example.com
-"$PWCLI" tab-list
-"$PWCLI" tab-select 0
-"$PWCLI" snapshot
-```
-
-## Wrapper script
-
-The wrapper script uses `npx --package @playwright/cli playwright-cli` so the CLI can run without a global install:
-
-```bash
+export PWCLI="${CODEX_HOME:-$HOME/.codex}/skills/playwright/scripts/playwright_cli.sh"
 "$PWCLI" --help
 ```
 
-Prefer the wrapper unless the repository already standardizes on a global install.
+The wrapper uses `npx --yes --package @playwright/cli playwright-cli`; its first use may download a package and write to npm's cache. Respect task authorization and network permissions. A global installation is optional; reuse it if the repository already standardizes on one.
 
-## References
+## Interaction loop
 
-Open only what you need:
+```bash
+"$PWCLI" open https://example.com --headed
+"$PWCLI" snapshot
+# Replace e3 with an element ref observed in that snapshot.
+"$PWCLI" click e3
+"$PWCLI" snapshot
+```
 
-- Read `references/cli.md` when you need command syntax, options, or artifact commands beyond the quick-start loop; after reading, choose the exact CLI command sequence and flags to run or report.
-- Read `references/workflows.md` when the task involves form flows, screenshots/PDF/traces, multi-tab work, troubleshooting, or a non-trivial browser interaction; after reading, choose the workflow path, re-snapshot points, artifact plan, and failure recovery step.
+Always obtain a snapshot before using element refs. Snapshot again after navigation, tab switches, menus/modals, significant DOM changes, or a stale-ref failure. Never invent live refs. For commands described but not executed, placeholders such as `eX` should be explicitly identified.
 
-## Guardrails
+Prefer explicit commands over `eval`/`run-code`; do not bypass snapshot ref requirements with code. Use `--headed` when visual inspection helps. Scope checks and artifacts to the requested flow and relevant risks. Store repo artifacts under `output/playwright/` unless the user or project specifies another location.
 
-- Always snapshot before referencing element ids like `e12`.
-- Re-snapshot when refs seem stale.
-- Prefer explicit commands over `eval` and `run-code` unless needed.
-- When you do not have a fresh snapshot, use placeholder refs like `eX` and say why; do not bypass refs with `run-code`.
-- Use `--headed` when a visual check will help.
-- When capturing artifacts in this repo, use `output/playwright/` and avoid introducing new top-level artifact folders.
-- Default to CLI commands and workflows, not Playwright test specs.
+## References and lifecycle
+
+- Read [CLI reference](references/cli.md) for exact command syntax, options, tabs, and artifact commands beyond the basic loop.
+- Read [workflow reference](references/workflows.md) for forms, extraction, traces, configuration, named sessions, or troubleshooting. Choose only the relevant workflow and re-snapshot points.
+- Track sessions and processes started by this task. Close the task-owned browser session when finished using the CLI's documented close command. Apply command timeouts and a wall-clock watchdog where a command may hang; confirm process exit after interruption or cleanup. Do not close unrelated user sessions.

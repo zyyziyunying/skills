@@ -16,21 +16,10 @@ This document owns local setup, debug, and machine-local conventions.
 
 ## Codex Boundary
 
-Default allowed:
-
-- Static reading and project-owned code or documentation edits.
-- [Fast deterministic lint, type, schema, or targeted test commands.]
-
-Conditionally allowed when `AGENTS.md`, `TEST.md`, this document, or the
-current user request explicitly allows the exact command:
-
-- [Integration, preview, browser, simulator, container, or expensive suite.]
-- [Documented commands that start isolated local services.]
-
-Requires separate confirmation:
-
-- Release, deployment, signing, publishing, or production changes.
-- Account, payment, private-data, real-device, or mutable external-state flows.
+[Record only project-specific execution constraints and link to the authoritative
+source for shared rules. Derive the boundary from applicable project instructions
+and user authorization; do not require repeat approval for already authorized
+steps. Identify any operation whose scope or required authorization is unresolved.]
 
 ## Debug Configuration
 

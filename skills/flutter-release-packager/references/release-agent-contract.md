@@ -122,6 +122,11 @@ make local tag/append closure part of the confirmed successful build through
 manual recovery path. Remote tag push always uses `push-tag --confirm-push` and
 is never inferred from build, record, Store upload, or deployment confirmation.
 
+Confirmation flags record authorization for each action. An explicit user
+request may authorize build, upload, record, and push together; do not ask again
+for an unchanged, already authorized action. Distinct flags remain required by
+the helper even when authorization arrives in one request.
+
 ## Rules
 
 - Use schema version 2 for new contracts. Version 2 requires each target's
@@ -142,8 +147,8 @@ is never inferred from build, record, Store upload, or deployment confirmation.
   `pushTagsAutomatically`, and `requiresSeparatePushConfirmation`.
 - Do not store secrets in the contract.
 - Do not include absolute machine-local secret paths in the contract.
-- Keep upload behavior explicit. Uploads should require a second confirmation unless the project rules clearly say otherwise.
-- Treat `block` as absolute. Do not add a generic user override for a project-declared dirty-worktree block.
+- Keep upload behavior explicit. Require upload authorization, honoring explicit authorization already provided; build-only authorization does not include upload.
+- The helper rejects builds prohibited by `block`. Report the prerequisite without bypassing execution checks. Revising project policy requires an explicit scoped request; do not change it just to make a build pass.
 - Keep remote tag push separately confirmable. Project-owned local tag/append
   may run automatically only when the contract explicitly enables successful
   build closure. Required remote push must never run automatically.

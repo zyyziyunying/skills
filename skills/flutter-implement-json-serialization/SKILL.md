@@ -1,6 +1,6 @@
 ---
 name: flutter-implement-json-serialization
-description: Implement, review, or migrate JSON serialization in Flutter or Dart models, API DTOs, request bodies, and persisted data. Use to choose a project-approved generated, hybrid, or manual strategy; adopt or reuse JSON code generation; preserve existing wire, validation, error, and compatibility semantics; and add focused serialization tests. Read the project Harness before changing tooling or contracts.
+description: Implement, review, or migrate JSON mapping and code generation in Flutter or Dart while preserving wire contracts, validation, and error semantics.
 ---
 
 # Flutter JSON Serialization
@@ -71,9 +71,9 @@ Treat dependencies, configuration, command, outputs, commit policy, freshness,
 Harness updates, and tests as one adoption change.
 
 Start with a bounded pilot and inspect both source and generated diffs before
-scaling. Never hand-edit generated output. Treat machine-generated files as
-exempt from handwritten source-size TODO markers and enforce that exemption in
-the project Harness; handwritten sources remain covered.
+scaling. Edit generator inputs and regenerate outputs through the project
+workflow. Source-size thresholds, TODO markers, and generated-file exemptions
+come from applicable user and project rules; this skill adds no exemption.
 
 ## Respect Request And Format Boundaries
 
@@ -91,7 +91,8 @@ generator on a schema- or tool-owned format without owner approval.
 Use the project-approved commands and the applicable parity matrix from the
 references. Verify observable wire behavior, project error translation, source
 context, and generated-output freshness rather than generated boilerplate
-itself. Run only Harness- or user-approved generation and dependency commands.
+itself. Follow applicable project and user authorization for generation and
+dependency commands without asking again for already authorized steps.
 
 Treat changes to public factories, accepted inputs, emitted keys, missing/null,
 normalization, unknown-value policy, errors, or persisted shapes as potentially

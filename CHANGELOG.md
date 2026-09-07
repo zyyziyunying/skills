@@ -6,6 +6,15 @@ All notable changes to this repository will be documented in this file.
 
 ### Changed
 
+- Reduced duplicated Flutter command-permission policies and delegated size
+  thresholds and generated-file exceptions to applicable project rules.
+- Added reusable bounded behavior scenarios under `scripts/evals/` for skill
+  authorization, standalone verification, output constraints, and tool routing.
+- Made standalone verifier test modes work from supplied behavior contracts
+  without requiring goal documents or a prior frozen charter.
+- Moved writing examples and browser/platform-specific procedures into routed
+  references, preserving skill names and invocation policies.
+
 - Simplified goal/project documentation routing: global or long-lived records
   use project documentation; short-lived task context stays with the goal.
 
@@ -25,6 +34,29 @@ All notable changes to this repository will be documented in this file.
   protobuf conversion scripts.
 
 ### Breaking Changes
+
+- `humanizer` now treats punctuation and paragraph structure as contextual
+  editing choices, preserving explicit requested format and author voice.
+  - Affected callers: prompts relying on automatic dash removal or preserving
+    the input paragraph count without stating that requirement.
+  - Migration: specify those stylistic requirements explicitly when wanted.
+  - Validation/docs: the editorial contract and routed pattern references
+    describe the new defaults; the behavior cases cover requested paragraph count.
+
+- Skill workflow defaults now honor already supplied user intent and scoped
+  authorization instead of requiring repeated confirmation.
+  - Affected behavior: `git-commit-helper` honors an explicit single-commit
+    request; release packaging reuses explicit build/upload/record/push
+    authorization; Flutter validation follows applicable project boundaries.
+    Release helper flags and contract execution checks remain unchanged.
+  - Affected callers: prompts or project workflows relying on these skills to
+    introduce an extra approval round or override an explicit commit count.
+  - Migration: put any required project-specific approval checkpoints in the
+    project's execution rules; explicitly identify authorized external actions.
+    Keep existing helper confirmation flags and satisfy contract prerequisites.
+  - Validation/docs: review routed skill references and project templates when
+    refreshing existing harness documents; existing projects are not rewritten
+    by updating this skill repository.
 
 - Merged `manage-goal-docs` into `goal-first-development` and removed the
   standalone `$manage-goal-docs` entry.

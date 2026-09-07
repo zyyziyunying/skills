@@ -1,6 +1,6 @@
 ---
 name: codex-project-harness
-description: Create or maintain an agent-legible project harness for software repositories and workspace subprojects. Use when bootstrapping or refreshing AGENTS.md navigation, ARCHITECTURE.md, product specs, design docs, execution plans, TEST.md or quality policy, generated-doc boundaries, references, local setup, packaging, and mechanically verifiable project governance; includes project-specific guidance for Flutter repositories.
+description: Create or maintain repository guidance for agents, including AGENTS.md navigation, authoritative project docs, and executable governance checks. Use for project harness setup or maintenance, not runtime test harnesses.
 ---
 
 # Codex Project Harness
@@ -141,7 +141,7 @@ name the project source when needed; an explicit user target wins.
 ## Project Variants
 
 For Flutter apps, packages, plugins, examples, or workspaces, read
-[references/flutter.md](references/flutter.md) before writing command tiers,
+[references/flutter.md](references/flutter.md) before documenting validation commands,
 device rules, generated-file behavior, or release boundaries.
 
 For other ecosystems, derive commands and safety boundaries from the repository

@@ -15,29 +15,16 @@ and workspaces.
 - For submodules, keep subproject documentation in the submodule and commit the
   parent pointer change separately.
 
-## Command Tiers
+## Commands and Execution Constraints
 
-Derive the exact commands from project facts. The usual starting boundary is:
+Derive commands and execution constraints from the repository and the user's
+request. Document relevant analysis, targeted tests, integration/device checks,
+generation, local preview, and release workflows only where the project needs
+them. Keep their operational details in the owning fact source and link to it.
 
-Default lightweight validation:
-
-- Static reading and project-owned code or documentation edits.
-- `dart analyze` or `flutter analyze`.
-- Targeted `dart test` or `flutter test test/...` when dependencies are present.
-
-Conditional validation only when `AGENTS.md`, `TEST.md`, `LOCAL.md`, another
-authoritative project source, or the current user request authorizes it:
-
-- `flutter test integration_test`.
-- `flutter run -d web-server`, hot reload, screenshots, or preview checks.
-- Documented generators that modify project-owned outputs.
-
-Require separate confirmation unless a more specific project contract already
-authorizes the exact action:
-
-- Real-device or simulator install and run.
-- `flutter build`, signing, release packaging, or store upload.
-- Store, account, payment, or mutable backend-state flows.
+Do not impose a universal permission tier for Flutter commands. Preserve
+applicable project restrictions and existing user authorization; already
+authorized steps do not need repeat approval.
 
 ## Fact Mapping
 
@@ -54,6 +41,7 @@ authorizes the exact action:
 - Put application IDs, bundle IDs, versioning, signing, artifacts, release
   channels, rollback, and publishing in `PACKAGING.md`.
 
-If a Dart source file already exceeds or will exceed 2000 lines and the project
-uses a shared code-size rule, add its required source-code TODO only to the
-source file. Do not put source-size markers in Markdown documents.
+Source-size thresholds, TODO placement, and generated-file exceptions belong
+to applicable user and project rules. Document or enforce those rules without
+inventing a threshold or exemption. Source-code markers belong in the applicable
+source file, not in Markdown documents.

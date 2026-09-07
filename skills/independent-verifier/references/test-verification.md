@@ -1,7 +1,8 @@
 # Independent Test Verification
 
-Use this mode after implementation with the frozen charter as the primary
-contract.
+Use this mode after implementation. Use the agreed test charter when present;
+otherwise derive expectations from the supplied specification and authoritative
+behavior sources. A prior test-design pass or goal document is not required.
 
 ## Verify
 

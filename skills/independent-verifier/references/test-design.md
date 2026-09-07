@@ -1,18 +1,20 @@
 # Independent Test Design
 
-Use this mode before implementation when the behavior contract is stable and an
-independent test track is required.
+Use this mode to design behavior-focused tests before implementation. Use the
+supplied specification or public contract; a goal document or separate test
+track is not a prerequisite. Surface material ambiguity in the result.
 
 ## Inputs
 
 Give the verifier the active goal or specification, authoritative behavior
-sources, public contracts, and a reliable pre-change baseline. Do not give it
+sources, and public contracts. Include a reliable pre-change baseline when
+pre-fix regression evidence is part of the task. Do not give it
 the developer's preferred implementation or inspect concurrently changing code
 unless the verifier has an isolated immutable baseline.
 
 ## Charter
 
-Derive a compact frozen charter covering:
+Derive a compact test charter covering the relevant items:
 
 - observable acceptance behavior;
 - negative and boundary cases;
@@ -24,12 +26,13 @@ Derive a compact frozen charter covering:
 Expected values must come from authoritative sources rather than current
 implementation output. Existing tests are evidence, not automatic truth.
 
-This mode is read-only unless the user explicitly requests test-first files and
-the owner grants a bounded test-only write scope.
+This mode is read-only unless the user or delegating owner authorizes a bounded
+test-only write scope.
 
 ## Result
 
-Return the authoritative behavior sources, frozen charter, expected pre-fix
-failure, environment needs, and unresolved specification questions. The owner
-records the charter in the existing Check owner; do not create a second truth
-source.
+Return the authoritative behavior sources, test charter, expected pre-fix
+failure when relevant, environment needs, and unresolved specification questions.
+If persistence is requested, update the existing test-plan or acceptance fact
+source. Otherwise return the result directly; do not create a document merely
+to satisfy this mode.

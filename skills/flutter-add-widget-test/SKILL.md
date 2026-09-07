@@ -1,9 +1,6 @@
 ---
 name: flutter-add-widget-test
 description: Implement a component-level test using `WidgetTester` to verify UI rendering and user interactions (tapping, scrolling, entering text). Use when validating that a specific widget displays correct data and responds to events as expected.
-metadata:
-  model: models/gemini-3.1-pro-preview
-  last_modified: Tue, 21 Apr 2026 21:15:41 GMT
 ---
 # Flutter Widget Tests
 
@@ -15,13 +12,11 @@ metadata:
 
 ## Command Boundary
 
-- **Default allowed:** static reading, code edits, `dart analyze`,
-  `flutter analyze`, and targeted `flutter test test/...`.
-- **Explicit project or user permission required:** `flutter test integration_test`,
-  `flutter run -d web-server`, hot reload, and screenshot or preview checks.
-- **Separate confirmation required:** real-device or simulator install/run,
-  `flutter build`, release/package work, store, account, payment, or mutable
-  backend-state flows.
+Use targeted `flutter test test/...` and relevant analysis checks. Derive any
+additional validation and execution constraints from the applicable project
+instructions and user request. Continue already authorized steps without repeat
+approval; do not expand widget-test work into unrelated release or external-state
+operations.
 
 ## Test Oracle
 

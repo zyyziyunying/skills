@@ -35,7 +35,8 @@ contracts, or owner documentation that defines correct behavior.
 
 ## Result
 
-Relay findings without upgrading or downgrading them. State whether blockers
-were found and what remained outside the review scope. If reviewed artifacts
-change afterward, the prior result no longer closes the review gate; review the
-final state again.
+Attribute findings to the reviewer and preserve their original assessment. If
+the owner disagrees, distinguish that judgment and its supporting evidence from
+the reviewer's result. State blockers and uncovered scope. If artifacts change
+afterward, reassess affected findings and checks against the final state;
+unrelated changes do not automatically require repeating the entire review.

@@ -65,20 +65,12 @@ npx skills add zyyziyunying/skills --all
 
 ## Recommended workflow entry
 
-Use `$goal-first-development` as the normal entry for goal-driven software
-delivery. It owns `goal.html`, validation-risk classification, the frozen
-behavior contract, component routing, evidence backfill, and final goal status.
-Install it with `codex-project-harness` and `independent-verifier` for the full
-flow; when a companion is unavailable, the owner can use a minimal goal document
-or the best direct validation and disclose the limitation.
-
-Depending on the confirmed risk, it delegates bug-value review, independent test
-design or verification, and final review through `$independent-verifier`. The
-verifier is also directly invokable for bounded standalone work. Ordinary
-subagent execution uses the runtime's native delegation with explicit ownership
-instead of a separate orchestration skill. Device, release, account, payment,
-and mutable backend-state boundaries still require the explicit skill or
-approval declared by the relevant project rules.
+Use [goal-first-development](skills/goal-first-development/SKILL.md) when you
+explicitly want goal-driven delivery and goal documentation.
+[Codex Project Harness](skills/codex-project-harness/SKILL.md) owns project
+knowledge organization; [Independent Verifier](skills/independent-verifier/SKILL.md)
+provides bounded verification and can also be used on its own. Each skill's
+entrypoint owns its workflow and reference routing.
 
 ## Maintain local discovery
 
@@ -99,3 +91,8 @@ For `npx skill`, the package specifier must start with `skills/`, so the publish
 ```text
 skills/<skill-name>/SKILL.md
 ```
+
+## Validate workflow changes
+
+Use the bounded [behavior regression cases](scripts/evals/skill-behavior-cases.md) when
+changing skill decisions, alongside structural and reference checks.

@@ -123,9 +123,9 @@ current policy into durable Harness sources.
 - Edit source annotations, models, adapters, and configuration; never hand-edit
   generated output.
 - Do not run generation as broad cleanup or install global tooling implicitly.
-- Exempt machine-generated output from handwritten source-size TODO markers.
-  Teach the project checker how to recognize generated paths or suffixes;
-  oversized handwritten sources remain covered.
+- Follow applicable user and project source-size rules, including any explicitly
+  defined generated-file treatment. Do not introduce thresholds or exemptions
+  as part of generator adoption unless the task calls for that policy change.
 
 ### Commit And CI
 
@@ -146,7 +146,7 @@ Write each mutable fact once:
 - API/persistence/module owner source: transport, envelope, error, field, and
   compatibility semantics.
 - `GENERATION.md` or equivalent: builders, sources, outputs, commands, commit
-  policy, generated-file exemptions, and freshness enforcement.
+  policy, any project-defined generated-file exceptions, and freshness enforcement.
 - `TEST.md` or equivalent: serialization scope, CI checks, and required
   evidence.
 - active goal or plan: experiment evidence, open decisions, rollout, and

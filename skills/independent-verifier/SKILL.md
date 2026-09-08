@@ -1,13 +1,13 @@
 ---
 name: independent-verifier
-description: "Review scoped artifacts, triage bug validity, or design and verify behavior-focused tests. Use for explicit independent review, bug-value assessment, test verification, or a delegated verification checkpoint."
+description: "Review code and artifacts for correctness, overengineering, and documentation redundancy; triage bug validity; or design and verify behavior-focused tests. Use for scoped reviews or delegated verification checkpoints."
 ---
 
 # Independent Verifier
 
 ## Result
 
-Return a focused correctness signal grounded in the scoped artifacts and their
+Return a focused correctness and maintainability assessment grounded in the scoped artifacts and their
 authoritative facts. Keep the verification proportionate to the decision rather
 than forcing the same ceremony on every task.
 
@@ -16,7 +16,8 @@ owner workflow's final status.
 
 ## Choose A Mode
 
-- **Review**: inspect a diff, code, document, or artifact. Read
+- **Review**: inspect a diff, code, document, or artifact for correctness,
+  unnecessary complexity, and documentation redundancy as applicable. Read
   [review.md](references/review.md).
 - **Bug value**: judge whether behavior is defective and worth fixing. Read
   [bug-value.md](references/bug-value.md), plus

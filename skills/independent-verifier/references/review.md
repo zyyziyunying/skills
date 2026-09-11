@@ -23,14 +23,25 @@ where applicable; a runtime bug is not required for an actionable finding.
   before proposing simplification. A single caller or a long file alone does not
   prove overengineering. Identify a simpler alternative that preserves required
   behavior and boundaries; do not turn a scoped review into a broad redesign.
-- **Documentation redundancy**: look for repeated instructions within or across
-  documents, competing copies of mutable facts, and sections that add no distinct
-  reader or workflow value. Check the designated source of truth and document
-  audience. Keep mutable implementation details, behavior, validation status,
-  and deferred items in that source; prefer boundaries, entry points, and links
-  in higher-level documents. Cite the overlapping passages and recommend the
-  authoritative location before consolidation. Useful summaries with links and
-  intentional standalone references are not automatically defects.
+- **Documentation quality**: check the audience and designated owner, then assess:
+  - Value: does each passage support a decision, constraint, or maintenance need?
+    Flag session narration and inventories with no distinct reader value.
+  - Correctness: trace affected business claims to code and authoritative contracts,
+    including service-owned facts where relevant. Distinguish observed behavior,
+    intended rules, and assumptions; code/doc agreement alone is not proof of
+    business correctness. Classify false claims as correctness findings.
+  - Scope and duplication: identify competing copies of mutable facts, unnecessary
+    implementation or volatile UI detail, and repeated validation history. Cite
+    the overlap and identify the unique owner; retain required interaction,
+    accessibility, compatibility, and evidence contracts.
+  - Concision: flag repeated explanations or prose that a clear flow diagram or
+    decision table can replace. Retain rationale and exceptions without retelling
+    the diagram. Simple rules may need only one sentence.
+  Assess only affected sections and dependencies needed to verify them. Length
+  alone is not a defect; do not demand arbitrary caps, mechanical splitting, or
+  diagrams everywhere. Useful linked summaries and intentional standalone
+  references are not automatically redundant. Classify unnecessary content as
+  documentation redundancy and explain its concrete maintenance cost.
 
 Ground maintainability findings in a concrete cost such as extra change sites,
 harder behavior tracing, conflicting instructions, or likely fact drift. Separate

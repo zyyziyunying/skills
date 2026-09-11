@@ -112,6 +112,27 @@ Keep one owner for each mutable fact and replace duplicated detail with links.
 8. Verify links, commands, ownership, plan lifecycle, and generated/manual
    boundaries. Record intentionally deferred checks.
 
+## Documentation Quality
+
+- Establish the reader, decision served, and unique owner before adding content.
+  Prioritize business responsibilities, state transitions, decision conditions,
+  failure boundaries, and non-obvious rationale. Link to code and schemas for
+  discoverable implementation detail; keep volatile UI presentation in code
+  unless the project needs a documented design or interaction contract.
+- Prefer diagrams for branching flows and tables for decisions when they improve
+  clarity. Use short prose for simple rules and exceptions; avoid restating a
+  diagram step by step. Keep the contract readable without remote rendering.
+- Trace business claims to implementation and authoritative contracts. Agreement
+  between code and docs alone does not prove business correctness; distinguish
+  observed behavior, intended rules, and unresolved assumptions.
+- Put these criteria in the existing documentation owner and link it from the
+  editing rules. Make each change review its affected owner sections for obsolete,
+  redundant, excessive, or verbose content; do not trigger a repository-wide sweep.
+  Keep necessary evidence in its established owner without appending session logs.
+- Treat length and growth as review signals, not quality verdicts or reasons for
+  mechanical splitting. Automate deterministic link, structure, and contract checks;
+  assess usefulness and semantic correctness through evidence-based review.
+
 ## Fact-Source Ownership
 
 - `AGENTS.md` owns agent navigation and durable execution constraints. Keep it

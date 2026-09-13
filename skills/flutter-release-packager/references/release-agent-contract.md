@@ -85,6 +85,17 @@ The `upload` object should define:
 - `condition`: optional `{ "option": "...", "equals": "..." }` guard that must be satisfied before upload can run.
 - `requiresSeparateConfirmation`: keep `true` unless project rules explicitly allow build confirmation to include upload.
 
+For targets with independent external uploads, `upload.actions` may contain
+non-empty objects with unique `id` values and the same upload fields above.
+Each action is validated separately, including its own wait and export guard;
+trigger options use their effective typed defaults when omitted. Any requested
+action requires `--confirm-upload`. Nested actions are not supported.
+Keep the outer upload object as a conservative legacy summary: the union of
+trigger/wait options and `default: true` when an action defaults on. Older
+helpers may request confirmation even after explicit opt-out, but must never
+silently bypass a default upload. Use the updated helper to apply action-specific
+conditions and honor explicit opt-out.
+
 The `evidence` object may define any `*Labels` arrays. Common labels are `artifactLabels`, `flutterOutputLabels`, `manifestLabels`, `symbolLabels`, `artifactsDirLabels`, `releaseRecordLabels`, `uploadStatusLabels`, and `uploadLogLabels`. When `requiredForSuccess: true`, define `requiredLabelGroups` as the `*Labels` keys that must each contribute at least one final log value. This applies to internal and store targets alike; keep conditional upload groups out of the required set unless upload itself is mandatory.
 
 When the `releaseRecords` key is present, its value must be an object; explicit

@@ -538,7 +538,32 @@ def validate_evidence_schema(
             )
 
 
+def upload_action_targets(target: dict[str, Any]) -> list[dict[str, Any]]:
+    """Separate external actions so one upload never satisfies another's guard."""
+    upload = target.get("upload", {})
+    if not isinstance(upload, dict) or "actions" not in upload:
+        return []
+    actions = upload["actions"]
+    if not isinstance(actions, list) or not actions:
+        raise SystemExit("upload.actions must be a non-empty array")
+    result = []
+    ids = set()
+    for action in actions:
+        if not isinstance(action, dict):
+            raise SystemExit("upload.actions entries must be objects")
+        action_id = action.get("id")
+        if not isinstance(action_id, str) or not action_id or action_id in ids:
+            raise SystemExit("upload.actions require unique non-empty ids")
+        if "actions" in action:
+            raise SystemExit("nested upload.actions are not supported")
+        ids.add(action_id)
+        result.append({**target, "id": f"{target.get('id')}/{action_id}", "upload": action})
+    return result
+
+
 def validate_upload_schema(target: dict[str, Any]) -> None:
+    for action_target in upload_action_targets(target):
+        validate_upload_schema(action_target)
     target_id = str(target.get("id", "<unknown>"))
     upload = target.get("upload", {"supported": False})
     if not isinstance(upload, dict):
@@ -580,6 +605,17 @@ def validate_upload_schema(target: dict[str, Any]) -> None:
             f"target {target_id}.upload references unknown options: "
             + ", ".join(unknown_upload_options)
         )
+
+    schemas = option_schema_by_name(target)
+    for name in trigger_options + wait_options:
+        if schemas and schemas[name].get("type") != "boolean":
+            raise SystemExit(f"target {target_id}.upload option {name} must be boolean")
+    condition = upload.get("condition")
+    if condition is not None:
+        if not isinstance(condition, dict) or condition.get("option") not in known_options:
+            raise SystemExit(f"target {target_id}.upload.condition must reference a known option")
+        if "equals" not in condition:
+            raise SystemExit(f"target {target_id}.upload.condition.equals is required")
 
 
 class ReleaseConsole:
@@ -810,12 +846,18 @@ def upload_requested(target: dict[str, Any], payload: dict[str, Any]) -> bool:
         f"target {target.get('id', '<unknown>')}.upload.triggerOptions",
     )
     for key in trigger_options:
-        if payload.get(key) is True:
+        if effective_option_value(target, payload, key) is True:
             return True
     return False
 
 
 def validate_upload_request(target: dict[str, Any], payload: dict[str, Any]) -> bool:
+    actions = upload_action_targets(target)
+    if actions:
+        # Evaluate all guards before reducing; a requested baseline must not
+        # short-circuit an invalid Store upload or processing wait.
+        requested = [validate_upload_request(action, payload) for action in actions]
+        return any(requested)
     upload = target.get("upload", {})
     if not isinstance(upload, dict):
         raise SystemExit(f"target {target.get('id', '<unknown>')}.upload must be an object")
@@ -836,7 +878,8 @@ def validate_upload_request(target: dict[str, Any], payload: dict[str, Any]) -> 
         f"target {target.get('id', '<unknown>')}.upload.waitOptions",
     )
     wait_without_upload = [
-        key for key in wait_options if payload.get(key) is True and not requested
+        key for key in wait_options
+        if effective_option_value(target, payload, key) is True and not requested
     ]
     if wait_without_upload:
         raise SystemExit(

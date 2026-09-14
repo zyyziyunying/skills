@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import io
 import os
+import stat
 import subprocess
 import sys
 import tempfile
@@ -12,7 +13,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 
 SCRIPT = Path(__file__).parents[1] / "scripts" / "convert_to_webp.py"
@@ -67,6 +68,315 @@ class ConvertToWebpTest(unittest.TestCase):
             self.assert_webp(second.parent / "webp" / "two.webp", (19, 23))
             self.assertEqual(originals, {first: digest(first), second: digest(second)})
             self.assertIn("converted=2 failed=0", result.stdout)
+
+    def test_trim_transparent_crops_outer_alpha_and_preserves_alpha_exactly(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "trim.png"
+            canvas = Image.new("RGBA", (12, 10), (0, 0, 0, 0))
+            content = Image.new("RGBA", (5, 4), (20, 40, 60, 128))
+            content.putpixel((0, 0), (20, 40, 60, 1))
+            content.putpixel((4, 3), (20, 40, 60, 255))
+            canvas.paste(content, (3, 2))
+            canvas.save(source)
+            original_digest = digest(source)
+
+            result = self.run_converter(
+                "--trim-transparent", "--output-mode", "subdir", source
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            output = root / "webp" / "trim.webp"
+            self.assert_webp(output, (5, 4))
+            with Image.open(output) as generated:
+                actual_alpha = generated.convert("RGBA").getchannel("A").tobytes()
+            self.assertEqual(content.getchannel("A").tobytes(), actual_alpha)
+            self.assertEqual(original_digest, digest(source))
+            self.assertIn("prepared=12x10", result.stdout)
+            self.assertIn("output=5x4", result.stdout)
+            self.assertIn("trim=trimmed", result.stdout)
+            self.assertIn("margins=3,2,4,4", result.stdout)
+            self.assertIn("alpha=exact", result.stdout)
+
+    def test_trim_transparent_supports_pa_tiff_without_losing_alpha(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "palette-alpha.tiff"
+            image = Image.new("PA", (8, 6), (0, 0))
+            image.putpalette([0, 0, 0, 20, 40, 60] + [0, 0, 0] * 254)
+            for y in range(1, 4):
+                for x in range(2, 6):
+                    image.putpixel((x, y), (1, 128))
+            image.putpixel((2, 1), (1, 1))
+            image.putpixel((5, 3), (1, 255))
+            image.save(source)
+            original_digest = digest(source)
+
+            result = self.run_converter(
+                "--trim-transparent", "--output-mode", "subdir", source
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            output = root / "webp" / "palette-alpha.webp"
+            self.assert_webp(output, (4, 3))
+            with Image.open(source) as reopened:
+                expected_alpha = (
+                    reopened.convert("RGBA").crop((2, 1, 6, 4)).getchannel("A")
+                )
+            with Image.open(output) as generated:
+                actual_alpha = generated.convert("RGBA").getchannel("A")
+            self.assertEqual(expected_alpha.tobytes(), actual_alpha.tobytes())
+            self.assertEqual(original_digest, digest(source))
+            self.assertIn("prepared=8x6", result.stdout)
+            self.assertIn("output=4x3", result.stdout)
+            self.assertIn("trim=trimmed", result.stdout)
+            self.assertIn("margins=2,1,2,2", result.stdout)
+            self.assertIn("alpha=exact", result.stdout)
+
+    def test_trim_transparent_supports_png_color_key_transparency(self) -> None:
+        cases = (
+            ("L", 0, 128),
+            ("RGB", (1, 2, 3), (20, 40, 60)),
+        )
+        for mode, transparent_color, visible_color in cases:
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                source = root / f"color-key-{mode}.png"
+                image = Image.new(mode, (6, 5), transparent_color)
+                for y in range(1, 4):
+                    for x in range(2, 5):
+                        image.putpixel((x, y), visible_color)
+                image.save(source, transparency=transparent_color)
+
+                result = self.run_converter(
+                    "--trim-transparent", "--output-mode", "subdir", source
+                )
+
+                self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+                output = root / "webp" / f"color-key-{mode}.webp"
+                self.assert_webp(output, (3, 3))
+                with Image.open(output) as generated:
+                    self.assertEqual(
+                        {255},
+                        set(generated.convert("RGBA").getchannel("A").tobytes()),
+                    )
+                self.assertIn("prepared=6x5", result.stdout)
+                self.assertIn("margins=2,1,1,1", result.stdout)
+                self.assertIn("alpha=exact", result.stdout)
+
+    def test_alpha_verification_failure_preserves_existing_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "source.png"
+            Image.new("RGBA", (7, 9), (20, 40, 60, 128)).save(source)
+            output_dir = root / "webp"
+            output_dir.mkdir()
+            output = output_dir / "source.webp"
+            Image.new("RGB", (3, 5), (1, 2, 3)).save(output, "WEBP")
+            original_output_digest = digest(output)
+            stdout = io.StringIO()
+            argv = [
+                str(SCRIPT),
+                "--output-mode",
+                "subdir",
+                str(source),
+            ]
+
+            with (
+                mock.patch.object(
+                    ImageChops,
+                    "difference",
+                    return_value=Image.new("L", (7, 9), 255),
+                ),
+                mock.patch.object(sys, "argv", argv),
+                contextlib.redirect_stdout(stdout),
+            ):
+                returncode = CONVERTER.main()
+
+            self.assertEqual(1, returncode)
+            self.assertEqual(original_output_digest, digest(output))
+            self.assertIn("alpha verification failed", stdout.getvalue())
+            self.assertIn("converted=0 failed=1", stdout.getvalue())
+            self.assertEqual([], list(output_dir.glob(".source.webp.*.tmp")))
+
+    def test_alpha_verification_failure_leaves_no_new_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "source.png"
+            Image.new("RGBA", (7, 9), (20, 40, 60, 128)).save(source)
+            output = root / "webp" / "source.webp"
+            stdout = io.StringIO()
+            argv = [
+                str(SCRIPT),
+                "--output-mode",
+                "subdir",
+                str(source),
+            ]
+
+            with (
+                mock.patch.object(
+                    ImageChops,
+                    "difference",
+                    return_value=Image.new("L", (7, 9), 255),
+                ),
+                mock.patch.object(sys, "argv", argv),
+                contextlib.redirect_stdout(stdout),
+            ):
+                returncode = CONVERTER.main()
+
+            self.assertEqual(1, returncode)
+            self.assertFalse(output.exists())
+            self.assertIn("alpha verification failed", stdout.getvalue())
+            self.assertEqual([], list(output.parent.glob(".source.webp.*.tmp")))
+
+    def test_new_output_uses_normal_umask_permissions(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "source.png"
+            Image.new("RGB", (7, 9), (20, 40, 60)).save(source)
+
+            result = self.run_converter("--output-mode", "subdir", source)
+
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            output = root / "webp" / "source.webp"
+            self.assertEqual(
+                stat.S_IMODE(source.stat().st_mode),
+                stat.S_IMODE(output.stat().st_mode),
+            )
+
+    def test_replaced_output_preserves_existing_permissions(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "source.png"
+            Image.new("RGB", (7, 9), (20, 40, 60)).save(source)
+            output_dir = root / "webp"
+            output_dir.mkdir()
+            output = output_dir / "source.webp"
+            Image.new("RGB", (3, 5), (1, 2, 3)).save(output, "WEBP")
+            output.chmod(0o664)
+
+            result = self.run_converter("--output-mode", "subdir", source)
+
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            self.assertEqual(0o664, stat.S_IMODE(output.stat().st_mode))
+
+    @unittest.skipUnless(sys.platform == "darwin", "macOS ACL behavior")
+    def test_replaced_output_preserves_existing_acl(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "source.png"
+            Image.new("RGB", (7, 9), (20, 40, 60)).save(source)
+            output_dir = root / "webp"
+            output_dir.mkdir()
+            output = output_dir / "source.webp"
+            Image.new("RGB", (3, 5), (1, 2, 3)).save(output, "WEBP")
+            subprocess.run(
+                ["chmod", "+a", "everyone allow read", str(output)],
+                check=True,
+            )
+            original_acl = subprocess.run(
+                ["ls", "-le", str(output)],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.splitlines()[1:]
+
+            result = self.run_converter("--output-mode", "subdir", source)
+
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            converted_acl = subprocess.run(
+                ["ls", "-le", str(output)],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.splitlines()[1:]
+            self.assertEqual(original_acl, converted_acl)
+
+    def test_non_macos_metadata_copy_keeps_generated_timestamp(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            existing = root / "existing.webp"
+            generated = root / "generated.webp"
+            existing.write_bytes(b"old")
+            generated.write_bytes(b"new")
+            old_time_ns = 946684800_000_000_000
+            generated_time_ns = 1_800_000_000_000_000_000
+            os.utime(existing, ns=(old_time_ns, old_time_ns))
+            os.utime(generated, ns=(generated_time_ns, generated_time_ns))
+
+            with mock.patch.object(CONVERTER.sys, "platform", "linux"):
+                CONVERTER.copy_output_metadata(existing, generated)
+
+            self.assertEqual(generated_time_ns, generated.stat().st_mtime_ns)
+
+    def test_exif_oriented_dimensions_are_reported_as_prepared_dimensions(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "oriented.jpg"
+            exif = Image.Exif()
+            exif[274] = 6
+            Image.new("RGB", (8, 4), (20, 40, 60)).save(source, exif=exif)
+
+            result = self.run_converter("--output-mode", "subdir", source)
+
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            self.assert_webp(root / "webp" / "oriented.webp", (4, 8))
+            self.assertIn("prepared=4x8", result.stdout)
+            self.assertIn("output=4x8", result.stdout)
+            self.assertIn("trim=off", result.stdout)
+
+    def test_transparent_margins_are_preserved_without_trim_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "unchanged.png"
+            canvas = Image.new("RGBA", (12, 10), (0, 0, 0, 0))
+            canvas.paste(Image.new("RGBA", (5, 4), (20, 40, 60, 128)), (3, 2))
+            canvas.save(source)
+
+            result = self.run_converter("--output-mode", "subdir", source)
+
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            self.assert_webp(root / "webp" / "unchanged.webp", (12, 10))
+            self.assertIn("trim=off", result.stdout)
+            self.assertIn("margins=0,0,0,0", result.stdout)
+
+    def test_trim_transparent_preserves_fully_transparent_canvas(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "empty.png"
+            Image.new("RGBA", (9, 11), (0, 0, 0, 0)).save(source)
+
+            result = self.run_converter(
+                "--trim-transparent", "--output-mode", "subdir", source
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            output = root / "webp" / "empty.webp"
+            self.assert_webp(output, (9, 11))
+            with Image.open(output) as generated:
+                self.assertEqual(
+                    {0},
+                    set(generated.convert("RGBA").getchannel("A").tobytes()),
+                )
+            self.assertIn("trim=fully-transparent-preserved", result.stdout)
+
+    def test_trim_transparent_is_noop_for_non_alpha_image(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            source = root / "opaque.jpg"
+            Image.new("RGB", (13, 17), (20, 40, 60)).save(source)
+
+            result = self.run_converter(
+                "--trim-transparent", "--output-mode", "subdir", source
+            )
+
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            output = root / "webp" / "opaque.webp"
+            self.assert_webp(output, (13, 17))
+            with Image.open(output) as generated:
+                self.assertEqual("RGB", generated.mode)
+            self.assertIn("trim=no-alpha", result.stdout)
+            self.assertIn("alpha=n/a", result.stdout)
 
     def test_directory_input_preserves_relative_tree_in_subdir(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

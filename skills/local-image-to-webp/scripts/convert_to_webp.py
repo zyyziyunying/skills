@@ -62,12 +62,16 @@ def copy_output_metadata(source: Path, destination: Path) -> None:
 
 
 def trim_transparent_edges(
-    image: Image.Image,
+    image: Image.Image, alpha_threshold: int = 64,
 ) -> tuple[Image.Image, tuple[int, int, int, int], str]:
-    """Crop fully transparent outer rows and columns without using a tolerance."""
-    alpha_bbox = image.getchannel("A").getbbox()
+    """Use threshold only to select bounds; preserve pixels inside the crop."""
+    alpha = image.getchannel("A")
+    alpha_bbox = alpha.point(lambda value: 255 if value > alpha_threshold else 0).getbbox()
     if alpha_bbox is None:
-        return image, (0, 0, 0, 0), "fully-transparent-preserved"
+        return image, (0, 0, 0, 0), (
+            "fully-transparent-preserved" if alpha.getbbox() is None
+            else "below-threshold-preserved"
+        )
 
     left, top, right, bottom = alpha_bbox
     margins = (left, top, image.width - right, image.height - bottom)
@@ -78,7 +82,7 @@ def trim_transparent_edges(
 
 def iter_sources(path: Path) -> list[Path]:
     if path.is_file():
-        return [path] if path.suffix.lower() in EXTENSIONS else []
+        return [path] if path.suffix.lower() in EXTENSIONS | {".webp"} else []
     return sorted(
         p
         for p in path.rglob("*")
@@ -128,7 +132,7 @@ def portable_output_key(path: Path) -> str:
 
 
 def plan_conversions(
-    roots: Iterable[Path], output_mode: str
+    roots: Iterable[Path], output_mode: str, in_place: bool = False
 ) -> list[tuple[Path, Path]]:
     conversions: list[tuple[Path, Path]] = []
     outputs: dict[str, tuple[Path, Path, Path]] = {}
@@ -140,7 +144,7 @@ def plan_conversions(
         output_base = generated_output_base(root, output_mode)
         for source_path in iter_sources(root):
             source_identity = source_path.resolve()
-            out = output_path(source_path, root, output_mode)
+            out = source_path if in_place else output_path(source_path, root, output_mode)
             if out.is_symlink():
                 raise SystemExit(f"refusing to replace symlink output: {out}")
             output_key = portable_output_key(out)
@@ -166,7 +170,7 @@ def plan_conversions(
         validate_generated_output_parent(output_base, out)
 
     existing_outputs: list[Path] = []
-    for _, out in conversions:
+    for input_path, out in conversions:
         if not out.exists():
             continue
         for previous_output in existing_outputs:
@@ -178,6 +182,8 @@ def plan_conversions(
         existing_outputs.append(out)
         for source in source_identities:
             if out.samefile(source):
+                if in_place and source == input_path.resolve() and out == input_path:
+                    continue
                 raise SystemExit(f"output aliases an input source: {out}: {source}")
 
     for out in existing_outputs:
@@ -192,16 +198,26 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("paths", metavar="path", type=Path, nargs="+")
     parser.add_argument("--quality", type=int, default=95)
-    parser.add_argument(
-        "--trim-transparent",
-        action="store_true",
-        help="crop only fully transparent outer rows and columns",
-    )
+    trim = parser.add_mutually_exclusive_group()
+    trim.add_argument("--trim-transparent", dest="trim_transparent", action="store_true",
+                      help="crop outer alpha margins (default)")
+    trim.add_argument("--no-trim-transparent", dest="trim_transparent", action="store_false",
+                      help="preserve the prepared canvas dimensions")
+    parser.set_defaults(trim_transparent=True)
+    parser.add_argument("--alpha-threshold", type=int, default=64,
+                        help="crop bounds use alpha > threshold, 0..254 (default: 64)")
+    parser.add_argument("--in-place", action="store_true",
+                        help="explicitly replace supplied WebP files; uses lossless encoding")
+    parser.add_argument("--diagnose", action="store_true",
+                        help="report candidate alpha bounds without writing files")
     parser.add_argument("--output-mode", choices=["same-dir", "subdir"], default="same-dir")
     args = parser.parse_args()
 
     if not 0 <= args.quality <= 100:
         parser.error("--quality must be between 0 and 100")
+
+    if not 0 <= args.alpha_threshold <= 254:
+        parser.error("--alpha-threshold must be between 0 and 254")
 
     roots = [Path(os.path.abspath(path.expanduser())) for path in args.paths]
     missing = [root for root in roots if not root.exists()]
@@ -210,12 +226,36 @@ def main() -> int:
     if not features.check("webp"):
         raise SystemExit("Pillow WebP support is unavailable")
 
+    if args.in_place:
+        if args.output_mode != "same-dir" or any(
+            not root.is_file() or root.suffix.lower() != ".webp" or root.is_symlink()
+            for root in roots
+        ):
+            parser.error("--in-place requires explicit non-symlink WebP files and same-dir mode")
+
+    if args.diagnose:
+        count = 0
+        for root in roots:
+            for src in iter_sources(root):
+                with Image.open(src) as source:
+                    image = ImageOps.exif_transpose(source).convert("RGBA")
+                    for threshold in sorted({0, 16, 32, 64, args.alpha_threshold}):
+                        cropped, margins, status = trim_transparent_edges(image, threshold)
+                        print(f"DIAG\t{src}\tthreshold={threshold}\tprepared={image.size}"
+                              f"\toutput={cropped.size}\tmargins={margins}\ttrim={status}")
+                count += 1
+        if not count:
+            raise SystemExit("no supported input images")
+        return 0
+
     planning_roots = (
         [root.resolve() for root in roots]
         if args.output_mode == "same-dir"
         else roots
     )
-    conversions = plan_conversions(planning_roots, args.output_mode)
+    conversions = plan_conversions(planning_roots, args.output_mode, args.in_place)
+    if not conversions:
+        raise SystemExit("no supported input images")
 
     converted: list[tuple[Path, str, tuple[int, int], int]] = []
     failed: list[tuple[Path, Exception]] = []
@@ -226,6 +266,9 @@ def main() -> int:
             out.parent.mkdir(parents=True, exist_ok=True)
             output_exists = out.exists()
             with Image.open(src) as image:
+                if getattr(image, "n_frames", 1) > 1:
+                    raise ValueError("animated/multipage images require a frame-preserving workflow")
+                lossless = image.format == "WEBP"
                 image = ImageOps.exif_transpose(image)
                 has_alpha = image_has_alpha(image)
                 icc_profile = image.info.get("icc_profile")
@@ -235,7 +278,7 @@ def main() -> int:
                 trim_status = "off"
                 if args.trim_transparent:
                     if has_alpha:
-                        image, margins, trim_status = trim_transparent_edges(image)
+                        image, margins, trim_status = trim_transparent_edges(image, args.alpha_threshold)
                     else:
                         trim_status = "no-alpha"
 
@@ -243,6 +286,7 @@ def main() -> int:
                 save_options: dict[str, object] = {
                     "quality": args.quality,
                     "method": 6,
+                    "lossless": lossless,
                 }
                 if has_alpha:
                     save_options.update(
@@ -277,6 +321,8 @@ def main() -> int:
                             raise ValueError(
                                 f"alpha verification failed: {alpha_difference}"
                             )
+                    if lossless and generated.convert(image.mode).tobytes() != image.tobytes():
+                        raise ValueError("lossless pixel verification failed")
                     generated_format = generated.format
                     generated_size = generated.size
 
@@ -294,6 +340,8 @@ def main() -> int:
                 f"prepared={prepared_size[0]}x{prepared_size[1]}\t"
                 f"output={image.size[0]}x{image.size[1]}\t"
                 f"trim={trim_status}\t"
+                f"threshold={args.alpha_threshold if args.trim_transparent else 'off'}\t"
+                f"encoding={'lossless' if lossless else 'lossy'}\t"
                 f"margins={','.join(map(str, margins))}\t"
                 f"alpha={'exact' if has_alpha else 'n/a'}"
             )

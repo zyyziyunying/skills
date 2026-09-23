@@ -1,78 +1,50 @@
 ---
 name: local-image-to-webp
-description: Convert local raster images to WebP, usually color quality 95, and optionally remove fully transparent outer alpha margins without changing visible content. Use for individual files or folders while preserving originals.
+description: Convert local raster images to WebP and clean transparent or faint alpha margins by default. Supports configurable threshold cropping, preserving canvas dimensions, and explicitly requested in-place WebP processing while retaining transparency.
 ---
 
 # Local Image To WebP
 
-## Scope
+Use for local image conversion and transparent-margin cleanup, including terse file paths. Do not integrate assets into Flutter or app builds unless requested.
 
-Use this skill for terse local conversion requests such as:
+## Default behavior and intent
 
-- "把这个路径下的图片处理为质量95的web/webp"
-- "建立 webp 子文件夹，整理进去"
-- "去掉图片多余的透明/alpha 外边距"
-- converting PNG/JPEG/GIF/TIFF/BMP assets for local use
+- Convert at color quality 95, `alpha_quality=100`, `method=6`; preserve the original PNG/JPEG/etc. Write the same basename with `.webp` beside the source unless a `webp` subfolder is requested.
+- **Clean alpha margins by default**, including faint outer pixels: crop to the bounding box of pixels with `alpha > 64` (8-bit alpha). This is this user's preferred asset-cleanup default, not a universally safe shadow threshold.
+- The threshold selects the rectangular crop only. Preserve every original alpha value inside it; do not erase interior transparency, flatten edges, or fill a background. Pixels outside the crop, including faint shadows, are discarded. Do not claim that all visible content is unchanged.
+- “去掉多余 alpha”, “去透明边距”, “还有空白”, or marked border screenshots mean margin cleanup in this workflow. They do **not** authorize removing the alpha channel or filling white.
+- Only flatten transparency when the user explicitly requests an opaque background. If its color is unspecified, clarify it. The conversion script does not implement flattening.
+- Honor “保留尺寸/不裁剪” with `--no-trim-transparent`. Honor “仅裁完全透明/保留所有阴影” with `--alpha-threshold 0`. Choose another threshold when the user's visual reference or instruction calls for it; do not blindly increase thresholds until a subject is clipped.
 
-Do not use for app builds or Flutter asset registration unless the user explicitly asks for repo integration.
+## Conversion and cropping
 
-## Workflow
-
-1. Resolve source paths.
-   - Accept a directory or explicit files.
-   - For directories, convert common raster images recursively unless the user says only top-level.
-   - Preserve originals.
-   - If the user asks for a `webp` subfolder, put outputs there with the same base name.
-   - Otherwise default to same-directory outputs.
-
-2. Choose encoder.
-   - Prefer bundled Python/Pillow when available; system `python3` on this machine may not have Pillow.
-   - If needed, locate the bundled Python runtime or install Pillow into a local temporary target instead of modifying system Python.
-   - Check WebP support before converting.
-   - Use color `quality=95` unless the user gives a different color quality. Keep `alpha_quality=100` and `method=6`; alpha quality 100 keeps the alpha plane lossless.
-   - Apply EXIF orientation correction.
-   - Preserve alpha by converting alpha images to `RGBA`, otherwise use `RGB`.
-
-3. Optionally remove excess transparent margins.
-   - When the user asks to clean, crop, or remove excess transparent/alpha space, pass `--trim-transparent`.
-   - Determine the crop from the alpha channel's non-zero bounding box. Remove only outer rows and columns whose alpha is exactly zero; do not use a tolerance, trim internal transparent regions, or discard faint antialiasing/shadow pixels.
-   - Treat trimming as opt-in because it changes pixel dimensions. Ordinary WebP conversion preserves the EXIF-corrected, pre-trim dimensions.
-   - If the image has no alpha channel, trimming is a no-op. If the whole canvas is transparent, preserve its dimensions rather than creating a zero-sized image.
-
-4. Convert and verify.
-   - Print each output path and byte size.
-   - Re-open generated `.webp` files and verify format and dimensions.
-   - For alpha images, compare the prepared source alpha plane with the decoded WebP alpha plane pixel-for-pixel. A mismatch is a conversion failure.
-   - Report `prepared` as the EXIF-corrected, pre-trim dimensions and `output` as the generated WebP dimensions. When trimming, also report removed margins in left, top, right, bottom order; those margins use the prepared orientation.
-   - If any file fails, report failures and leave successful outputs in place.
-
-## Script
-
-Use `scripts/convert_to_webp.py` when possible:
+Use `scripts/convert_to_webp.py` with a Python runtime containing Pillow and WebP support (prefer the bundled runtime over system Python).
 
 ```bash
-<python-with-pillow> <skill-dir>/scripts/convert_to_webp.py --quality 95 --output-mode subdir /path/to/images
-<python-with-pillow> <skill-dir>/scripts/convert_to_webp.py --quality 95 --output-mode subdir /path/to/one.png /another/path/two.jpg
-<python-with-pillow> <skill-dir>/scripts/convert_to_webp.py --quality 95 --trim-transparent --output-mode subdir /path/to/image.png
+# Default: quality 95, threshold 64 margin cleanup, same-directory output
+<python> <skill-dir>/scripts/convert_to_webp.py /path/to/image.png
+# Preserve the canvas
+<python> <skill-dir>/scripts/convert_to_webp.py --no-trim-transparent /path/to/image.png
+# Strictly transparent margins only
+<python> <skill-dir>/scripts/convert_to_webp.py --alpha-threshold 0 /path/to/image.png
+# Inspect candidate bounds without writes
+<python> <skill-dir>/scripts/convert_to_webp.py --diagnose /path/to/image.png
+# Explicitly authorized replacement of an existing WebP
+<python> <skill-dir>/scripts/convert_to_webp.py --in-place /path/to/image.webp
+# Preserve existing WebP and write into its webp subfolder
+<python> <skill-dir>/scripts/convert_to_webp.py --output-mode subdir /path/to/image.webp
 ```
 
-`--trim-transparent` is safe for mixed batches: alpha images are cropped to their exact non-zero alpha bounds, while JPEG and other non-alpha images keep their dimensions.
+- `--trim-transparent` remains an explicit synonym for the default. `--alpha-threshold` accepts 0–254; default 64. Alpha equal to the threshold does not determine the bounds.
+- Apply EXIF orientation before cropping. Alpha images use RGBA; others use RGB. Images without alpha are not cropped. Entirely transparent images, or images with no alpha above the threshold, retain their dimensions and report the reason.
+- If cleanup still seems insufficient or threatens intentional soft shadows, use `--diagnose` to compare bounds at 0, 16, 32, 64 and the selected threshold. Inspect a crop preview when needed. Do not confuse faint pixels with absence of margins.
+- Existing WebP inputs are encoded losslessly to avoid repeated color degradation; sizes can increase. In-place replacement requires `--in-place` and explicit user authorization such as “直接替换”. Use the supplied source; do not silently substitute a similarly named PNG.
+- Directory inputs recursively include common raster formats but skip existing WebPs and generated `webp` subtrees. Supply WebPs explicitly to process them. Animated/multipage inputs are rejected rather than silently reduced to a single frame.
+- `same-dir` writes beside each source. `subdir` writes into a `webp` folder, retaining relative paths for directory inputs. Explicit source symlinks preserve their lexical location in subdir mode; same-dir keeps the existing resolved-target behavior for non-WebP sources.
+- Keep collision, output-symlink, generated-subtree, and hard-link checks. In-place mode accepts explicit non-symlink WebP files only. Write a temporary output, verify it, then atomically replace the destination; a failed conversion leaves any existing destination intact.
 
-Output modes:
+## Verification and report
 
-- `same-dir`: write beside each source
-- `subdir`: for a directory input, write into its `webp` folder while preserving
-  the relative tree; for explicit files, write each output into a `webp` folder
-  under that file's parent directory
+Reopen outputs and verify WebP format and expected dimensions. Compare the **cropped source alpha** to the decoded output alpha pixel-for-pixel. For lossless WebP processing also compare all cropped pixel channels. Report failures and leave successful outputs in place.
 
-In `subdir` mode, the script rejects pre-existing symlinks and non-directory
-components within the generated `webp` subtree. A source parent may itself be an
-intentional directory symlink, and an explicitly supplied file symlink keeps its
-lexical parent and filename for output placement.
-
-In either mode, the script rejects an existing output file with multiple hard
-links before conversion so overwriting it cannot mutate another pathname.
-
-## Output
-
-State the output directory, converted count, failed count, verification result, prepared/output dimensions, and whether trimming changed each image's dimensions. Preserve the source files.
+State output directory, successful/failed counts, quality or lossless mode, byte size, EXIF-corrected `prepared` dimensions, `output` dimensions, threshold, and removed margins in left/top/right/bottom order. Say whether dimensions changed and whether the source was preserved or explicitly replaced. Do not say “alpha removed” when only margins were cropped.

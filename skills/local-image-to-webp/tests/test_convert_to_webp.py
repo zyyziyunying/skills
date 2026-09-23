@@ -323,9 +323,9 @@ class ConvertToWebpTest(unittest.TestCase):
             self.assert_webp(root / "webp" / "oriented.webp", (4, 8))
             self.assertIn("prepared=4x8", result.stdout)
             self.assertIn("output=4x8", result.stdout)
-            self.assertIn("trim=off", result.stdout)
+            self.assertIn("trim=no-alpha", result.stdout)
 
-    def test_transparent_margins_are_preserved_without_trim_flag(self) -> None:
+    def test_transparent_margins_are_preserved_with_no_trim_flag(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             source = root / "unchanged.png"
@@ -333,7 +333,7 @@ class ConvertToWebpTest(unittest.TestCase):
             canvas.paste(Image.new("RGBA", (5, 4), (20, 40, 60, 128)), (3, 2))
             canvas.save(source)
 
-            result = self.run_converter("--output-mode", "subdir", source)
+            result = self.run_converter("--no-trim-transparent", "--output-mode", "subdir", source)
 
             self.assertEqual(0, result.returncode, result.stderr + result.stdout)
             self.assert_webp(root / "webp" / "unchanged.webp", (12, 10))
@@ -666,6 +666,143 @@ class ConvertToWebpTest(unittest.TestCase):
             self.assertIn("refusing hard-linked output", result.stderr)
             self.assertEqual(original_digest, digest(unrelated))
             self.assertEqual(original_digest, digest(output))
+
+
+    def make_faint_image(self, path):
+        image = Image.new("RGBA", (12, 10), (10, 20, 30, 1))
+        image.paste(Image.new("RGBA", (6, 4), (90, 100, 110, 255)), (3, 2))
+        image.putpixel((4, 3), (40, 50, 60, 12))
+        image.putpixel((0, 0), (10, 20, 30, 64))
+        image.save(path, lossless=True, exact=True)
+        return image
+
+    def test_default_removes_faint_edges_but_keeps_interior_alpha(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "faint.png"
+            image = self.make_faint_image(source)
+            original = digest(source)
+            result = self.run_converter(source)
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            with Image.open(source.with_suffix(".webp")) as output:
+                self.assertEqual((6, 4), output.size)
+                self.assertEqual(image.crop((3, 2, 9, 6)).getchannel("A").tobytes(),
+                                 output.convert("RGBA").getchannel("A").tobytes())
+            self.assertEqual(original, digest(source))
+            self.assertIn("threshold=64", result.stdout)
+            self.assertIn("margins=3,2,3,4", result.stdout)
+
+    def test_zero_threshold_retains_faint_edges(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "faint.png"
+            self.make_faint_image(source)
+            result = self.run_converter("--alpha-threshold", "0", source)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assert_webp(source.with_suffix(".webp"), (12, 10))
+
+    def test_no_pixels_above_threshold_preserves_canvas(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "faint.png"
+            Image.new("RGBA", (5, 7), (10, 20, 30, 32)).save(source)
+            result = self.run_converter(source)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assert_webp(source.with_suffix(".webp"), (5, 7))
+            self.assertIn("below-threshold-preserved", result.stdout)
+
+    def test_webp_inplace_requires_flag_and_preserves_crop_pixels(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "faint.WEBP"
+            image = self.make_faint_image(source)
+            original = digest(source)
+            denied = self.run_converter(source)
+            self.assertNotEqual(0, denied.returncode)
+            self.assertEqual(original, digest(source))
+            result = self.run_converter("--in-place", source)
+            self.assertEqual(0, result.returncode, result.stderr + result.stdout)
+            with Image.open(source) as output:
+                self.assertEqual(image.crop((3, 2, 9, 6)).tobytes(),
+                                 output.convert("RGBA").tobytes())
+            self.assertIn("encoding=lossless", result.stdout)
+
+    def test_inplace_verification_failure_preserves_original(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "faint.webp"
+            self.make_faint_image(source)
+            original = digest(source)
+            with (mock.patch.object(ImageChops, "difference",
+                                    return_value=Image.new("L", (6, 4), 255)),
+                  mock.patch.object(sys, "argv", [str(SCRIPT), "--in-place", str(source)]),
+                  contextlib.redirect_stdout(io.StringIO())):
+                result = CONVERTER.main()
+            self.assertEqual(1, result)
+            self.assertEqual(original, digest(source))
+            self.assertEqual([], list(source.parent.glob("*.tmp")))
+
+    def test_webp_subdir_preserves_original(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "faint.webp"
+            self.make_faint_image(source)
+            original = digest(source)
+            result = self.run_converter("--output-mode", "subdir", source)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(original, digest(source))
+            self.assert_webp(source.parent / "webp" / source.name, (6, 4))
+
+    def test_directory_skips_existing_webp(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            self.make_faint_image(root / "faint.png")
+            self.make_faint_image(root / "faint.webp")
+            result = self.run_converter("--output-mode", "subdir", root)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn("converted=1 failed=0", result.stdout)
+
+    def test_diagnose_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "faint.webp"
+            self.make_faint_image(source)
+            original = digest(source)
+            result = self.run_converter("--diagnose", source)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(original, digest(source))
+            self.assertEqual([source], list(source.parent.iterdir()))
+            self.assertIn("threshold=0", result.stdout)
+            self.assertIn("threshold=64", result.stdout)
+
+    def test_inplace_rejects_symlinks_hardlinks_and_png(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "faint.webp"
+            self.make_faint_image(source)
+            original = digest(source)
+            alias = root / "alias.webp"
+            alias.symlink_to(source)
+            self.assertNotEqual(0, self.run_converter("--in-place", alias).returncode)
+            alias.unlink()
+            os.link(source, alias)
+            self.assertNotEqual(0, self.run_converter("--in-place", source).returncode)
+            png = root / "faint.png"
+            self.make_faint_image(png)
+            self.assertNotEqual(0, self.run_converter("--in-place", png).returncode)
+            self.assertEqual(original, digest(source))
+
+    def test_invalid_threshold_rejected_before_write(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "faint.png"
+            self.make_faint_image(source)
+            for value in ("-1", "255"):
+                self.assertNotEqual(0, self.run_converter("--alpha-threshold", value, source).returncode)
+            self.assertFalse(source.with_suffix(".webp").exists())
+
+    def test_animated_webp_is_not_flattened(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source = Path(temp) / "animated.webp"
+            first = Image.new("RGBA", (4, 4), (255, 0, 0, 255))
+            second = Image.new("RGBA", (4, 4), (0, 255, 0, 255))
+            first.save(source, save_all=True, append_images=[second], duration=100)
+            original = digest(source)
+            result = self.run_converter("--in-place", source)
+            self.assertNotEqual(0, result.returncode)
+            self.assertEqual(original, digest(source))
 
 
 if __name__ == "__main__":

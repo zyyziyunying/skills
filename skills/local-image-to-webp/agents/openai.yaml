@@ -1,4 +1,4 @@
 interface:
   display_name: "Local Image To WebP"
-  short_description: "Convert local images to WebP"
-  default_prompt: "Use $local-image-to-webp to convert this local image folder to quality 95 WebP."
+  short_description: "Convert images to WebP and clean alpha margins"
+  default_prompt: "Use $local-image-to-webp to convert these local images to quality 95 WebP and clean faint alpha margins while retaining transparency."

@@ -28,7 +28,7 @@ Use these as options, not prescriptions. Choose the tree that most clearly expla
 Find which parent supplies finite space before adding a wrapper.
 
 - A vertical lazy list inside a bounded `Column` usually needs `Expanded` or another meaningful height bound.
-- Do not use `Expanded` or `Flexible` on the same unbounded axis inside `SingleChildScrollView`.
+- On an unbounded main axis inside `SingleChildScrollView`, `Expanded` or tight flex cannot fill the infinite remaining space; nonzero loose flex with `MainAxisSize.max` also fails. `MainAxisSize.min` with only loose flex children can lay out finite content, but does not distribute remaining viewport space and usually needs no flex wrapper.
 - When a header and lazy collection scroll together, prefer one sliver-based scroll owner over nested vertical scrollables.
 - Reserve `shrinkWrap` for a deliberately small nested collection; it is not a general constraint fix.
 

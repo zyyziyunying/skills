@@ -20,12 +20,15 @@ A reusable component may be much narrower than the screen. Avoid global screen-w
 
 Fixed or minimum sizes fit intentional gaps, icons, touch targets, avatars, media slots, and fixed-format artboards. They are fragile around text, localization, forms, stateful panels, and page height.
 
-Prefer a maximum for growing content:
+Prefer a maximum for growing content when the incoming constraints allow it to shrink. A tight parent width wins over `ConstrainedBox(maxWidth: ...)`; use `Align` or `Center` when the design calls for narrower content within that parent:
 
 ```dart
-ConstrainedBox(
-  constraints: const BoxConstraints(maxWidth: 560),
-  child: const ProfileForm(),
+Align(
+  alignment: Alignment.topCenter,
+  child: ConstrainedBox(
+    constraints: const BoxConstraints(maxWidth: 560),
+    child: const ProfileForm(),
+  ),
 )
 ```
 
@@ -49,8 +52,15 @@ Treat screenshot and Figma dimensions as clues about hierarchy, spacing, alignme
 
 A breakpoint is useful when it enables a different structure: one column becomes two panes, a drawer becomes persistent navigation, list and detail coexist, or a grid gains a column while tiles remain usable. If only spacing changes, natural layout may already be enough.
 
+## Preserve Text Scaling and Own Keyboard Avoidance
+
+- Preserve the inherited `TextScaler`, including nonlinear scaling. Prefer wrapping, reflow, or scrolling over disabling or clamping text scaling merely to hide overflow.
+- Give keyboard avoidance one owner per layout region. `Scaffold` normally resizes its body for the keyboard; children should use that reduced space rather than subtract the same inset again. For a modal sheet or dialog, inspect the route or host's inset handling before adding `viewInsets.bottom` padding. `SafeArea` is not a substitute for keyboard avoidance.
+
 ## Check the Risk You Introduced
 
 Select variations from the layout's assumptions instead of applying a universal device matrix: narrow width for a tight row, long or scaled text for dynamic content, keyboard inset for a form, wide parent for an adaptive composition, or empty/loading/error state when structure changes.
+
+Combine variations when their effects interact, such as a narrow parent, enlarged text, and an open keyboard in a form. Exercise focus, scrolling, and taps to confirm the last field and primary action remain reachable; absence of overflow errors alone does not prove usability.
 
 Record the viewport, state, and data source actually observed. Static inspection is reasoning evidence; a rendered screenshot or Web preview is evidence for that state and viewport; real-device and native behavior require their own checks.

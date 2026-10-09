@@ -34,7 +34,8 @@ Apply only the boundaries relevant to the task:
 - Prefer one clear scroll owner per axis. Resolve unbounded constraints by understanding the parent and intended scrolling behavior; do not default to nested scrollables or `shrinkWrap: true` merely to silence an error.
 - Use `Stack` for real overlap, not to reproduce ordinary flowing content with coordinates.
 - Preserve interaction semantics. Prefer real buttons, fields, list items, and selection controls over a painted shape plus `GestureDetector`; add `Semantics` when a custom interaction is justified.
-- Validate the variation most likely to break the chosen layout, then report only what was actually observed. A screenshot, mock, or Web preview proves that rendered state and viewport, not native behavior, live data, or every device.
+- Preserve inherited text scaling. For input layouts, let the host own keyboard avoidance and keep focused fields and primary actions reachable.
+- Validate the variations most likely to break the chosen layout, including interacting risks when relevant, then report only what was actually observed. A screenshot, mock, or Web preview proves that rendered state and viewport, not native behavior, live data, or every device.
 
 ## Use Project Facts Without Ceremony
 
@@ -43,7 +44,7 @@ Follow applicable project instructions and the nearest declared source of truth 
 ## Optional References
 
 - Read [layout-patterns.md](references/layout-patterns.md) when the main composition, scroll ownership, or bounded-axis behavior is unclear.
-- Read [responsive-layout.md](references/responsive-layout.md) when available space, overflow, design-frame translation, or fixed sizing needs more thought.
+- Read [responsive-layout.md](references/responsive-layout.md) when available space, overflow, design-frame translation, fixed sizing, text scaling, or keyboard avoidance needs more thought.
 - Read [preview-workflow.md](references/preview-workflow.md) only when the user or project asks for an app-style preview or `LAYOUT-PREVIEW.md` decision.
 
 Load only the reference that helps with the current problem. No reference is a gate.

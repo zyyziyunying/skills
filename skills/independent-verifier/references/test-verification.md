@@ -18,12 +18,14 @@ For a bug fix, demonstrate fail-before-fix and pass-after-fix when a safe
 isolated baseline exists. Never destructively checkout or overwrite user work to
 manufacture that proof. Otherwise mark pre-fix failure as unproven.
 
-Classify failures against the contract instead of guessing:
+Classify verification against the contract instead of guessing:
 
 - `pass`
 - `implementation failure`
 - `spec conflict`
 - `environment blocked`
+- `not run`: implementation/test artifacts are missing or execution is outside
+  the permitted scope; state the reason without implying an observed failure.
 
 ## Result
 

@@ -71,9 +71,11 @@ claiming those criteria were checked.
 Output only findings, risks, and necessary improvements, ordered by impact.
 Each finding must include category (correctness, code complexity, or
 documentation redundancy), severity with concrete impact, evidence path and
-line, and the smallest necessary correction. Cite all relevant locations for
-duplication findings. If there are no findings, state the checked and uncovered
-scope.
+line, and the smallest necessary correction. For correctness findings, include
+the governing expectation and reachable trigger; distinguish static evidence
+from executed reproduction and keep unverified user impact provisional. Cite
+all relevant locations for duplication findings. If there are no findings,
+state the checked and uncovered scope.
 ```
 
 Allow the reviewer to read nearby project instructions, specifications, API

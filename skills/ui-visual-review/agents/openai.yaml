@@ -1,0 +1,7 @@
+interface:
+  display_name: "UI Visual Review"
+  short_description: "Review rendered UI and deliver screenshot evidence"
+  default_prompt: "Use $ui-visual-review to inspect this interface across relevant viewports and states, then show screenshots with findings and validation limits."
+
+policy:
+  allow_implicit_invocation: true

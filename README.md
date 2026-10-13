@@ -62,6 +62,7 @@ npx skills add zyyziyunying/skills --all
 | `r8-analyzer` | Audit Android R8 configuration, analyzer reports, and keep-rule risk. |
 | `session-work-report` | Summarize substantial session work into an evidence-backed report or handoff with useful visuals when appropriate. |
 | `screenshot` | Capture desktop or app screenshots when OS-level capture is needed. |
+| `ui-visual-review` | Review rendered UI across viewports and states, with screenshot evidence and explicit validation limits. |
 
 ## Recommended workflow entry
 
